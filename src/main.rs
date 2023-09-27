@@ -1,114 +1,129 @@
-use bevy::{prelude::*, sprite::MaterialMesh2dBundle, ecs::system::EntityCommands};
-use bevy_rapier2d::prelude::*;
 use bevy::input::mouse::MouseMotion;
-use bevy::window::PrimaryWindow;
+use bevy::prelude::*;
+use bevy_rapier2d::prelude::*;
+use bevy::input::mouse::MouseWheel;
+use bevy::input::mouse::MouseScrollUnit;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_systems(Startup, (setup, setup_graphics, setup_physics))
+        .add_systems(Startup,  setup_physics)
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
-        .add_systems(Update, (print_ball_altitude, control_zoom))
+        .add_systems(Update, (control_zoom, cast_ray))
         .add_plugins(RapierDebugRenderPlugin::default())
+        .insert_resource(RapierContext::default())
         
         .run();
 }
 
-fn setup_graphics(mut commands: Commands) {
-    // Add a camera so we can see the debug-render.
-    commands.spawn(Camera2dBundle::default());
-}
+
 
 fn setup_physics(mut commands: Commands) {
+    commands.spawn(Camera2dBundle::default());
     /* Create the ground. */
-    commands
-        .spawn(Collider::cuboid(500.0, 50.0))
-        .insert(TransformBundle::from(Transform::from_xyz(0.0, -100.0, 0.0)));
+    let ground = commands
+        .spawn(RigidBody::Fixed)
+        .insert(Collider::cuboid(500.0, 50.0))
+        .insert(TransformBundle::from(Transform::from_xyz(0.0, -100.0, 0.0)))
+        
+        .id();
 
     let joint = RevoluteJointBuilder::new()
-    .local_anchor1(Vec2::new(0.0, 0.0))
-    .local_anchor2(Vec2::new(0.00001, 0.0));
-
+    .local_anchor1(Vec2::new(-500.0, 500.0))
+    .local_anchor2(Vec2::new(0.0, 0.0));
+    println!("ground id at start {}", ground.index());
     
 
     /* Create the bouncing ball. */
-    let mut ball: Entity = commands
+    let ball: Entity = commands
         .spawn(RigidBody::Dynamic)
         .insert(Collider::ball(50.0))
         .insert(Restitution::coefficient(0.7))
-        .insert(TransformBundle::from(Transform::from_xyz(0.0, 400.0, 0.0))).id();
-
-    commands.entity(ball).insert(ImpulseJoint::new(ball, joint));
         
-        
-}
+        .insert(GravityScale(10.0))
+        .insert(TransformBundle::from(Transform::from_xyz(100.0, 400.0, 0.0))).id();
 
-
-
-fn setup(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-) {
+    commands.entity(ground).insert(ImpulseJoint::new(ball, joint));
     
-
-    // Circle
-    commands.spawn(MaterialMesh2dBundle {
-        mesh: meshes.add(shape::Circle::new(50.).into()).into(),
-        material: materials.add(ColorMaterial::from(Color::PURPLE)),
-        transform: Transform::from_translation(Vec3::new(-150., 0., 0.)),
-        ..default()
-    });
-
-    // Rectangle
-    commands.spawn(SpriteBundle {
-        sprite: Sprite {
-            color: Color::rgb(0.25, 0.25, 0.75),
-            custom_size: Some(Vec2::new(50.0, 100.0)),
-            ..default()
-        },
-        transform: Transform::from_translation(Vec3::new(-50., 0., 0.)),
-        ..default()
-    });
-
-    // Quad
-    commands.spawn(MaterialMesh2dBundle {
-        mesh: meshes
-            .add(shape::Quad::new(Vec2::new(50., 100.)).into())
-            .into(),
-        material: materials.add(ColorMaterial::from(Color::LIME_GREEN)),
-        transform: Transform::from_translation(Vec3::new(50., 0., 0.)),
-        ..default()
-    });
-
-    // Hexagon
-    commands.spawn(MaterialMesh2dBundle {
-        mesh: meshes.add(shape::RegularPolygon::new(50., 6).into()).into(),
-        material: materials.add(ColorMaterial::from(Color::TURQUOISE)),
-        transform: Transform::from_translation(Vec3::new(150., 0., 0.)),
-        ..default()
-    });
+    
+        
 }
 
-fn print_ball_altitude(positions: Query<&Transform, With<RigidBody>>) {
-    for transform in positions.iter() {
-        println!("Ball altitude: {}", transform.translation.y);
-    }
-}
+
+
+
+
 
 fn control_zoom (
-    q_windows: Query<&Window, With<PrimaryWindow>>,
-    mut cameras: Query<&mut OrthographicProjection, With<Camera2d>>
+    
+    mut scroll_evr: EventReader<MouseWheel>,
+    mut mouse_evr: EventReader<MouseMotion>,
+    buttons: Res<Input<MouseButton>>,
+    mut cameras: Query<(&mut OrthographicProjection, &mut Transform), With<Camera2d>>,
 
 
 ) {
     for mut camera in cameras.iter_mut() {
-        print!("Camera Scale: {}", camera.scale);
+        //print!("Camera Scale: {}", camera.scale);
 
-        if let Some(position) = q_windows.single().cursor_position() {
-            camera.scale = position.x / (q_windows.single().physical_width() / 5) as f32 + 0.5;
+        if buttons.pressed(MouseButton::Left) {
+
+            for ev in mouse_evr.iter() {
+                
+                camera.1.translation += Vec3::new(-ev.delta.x, ev.delta.y, 0.0) * camera.0.scale;
+            }
         }
+
+        
+
+
+        
+        for ev in scroll_evr.iter() {
+        match ev.unit {
+            MouseScrollUnit::Line => {
+                camera.0.scale -= ev.y / 10.0;
+                if camera.0.scale < 0.0 {camera.0.scale = 0.0}
+                
+            }
+            MouseScrollUnit::Pixel => {
+                //println!("Scroll (pixel units): vertical: {}, horizontal: {}", ev.y, ev.x);
+            }
+        }
+    }
     }
 
     
+}
+
+fn cast_ray(
+    rapier_context: Res<RapierContext>,
+
+    buttons: Res<Input<MouseButton>>,
+   
+
+) {
+
+
+
+    if buttons.just_pressed(MouseButton::Left) {
+        
+        let ray_pos = Vec2::new(0.0, -200.0);
+        let ray_dir = Vec2::new(0.0, 1.0);
+        let max_toi = 400000.0;
+        let solid = true;
+        let filter = QueryFilter::default();
+
+        if let Some((entity, toi)) = rapier_context.cast_ray(ray_pos, ray_dir, max_toi, solid, filter) {
+            // The first collider hit has the entity `entity` and it hit after
+            // the ray travelled a distance equal to `ray_dir * toi`.
+            let hit_point = ray_pos + ray_dir * toi;
+            //println!("Entity {:?} hit at point {}", entity, hit_point);
+            
+            println!("raycast id {}", entity.index())
+        }
+
+
+    
+
+    }
 }
