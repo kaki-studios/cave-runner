@@ -29,6 +29,7 @@ fn main() {
         //The solution to generating caves.
         //Takes its current XYZ coordinate and generates 3 octaves of perlin noise in order to determine an xyz offset to move towards. 
         //Then it shifts to that offset and places a cell, and repeats that cycle every frame.
+        //this will also work better than premade maps for infinite generation
         if i < &mut -0.25 || i > &mut 0.25 {
             i = &mut 1.0;
             println!("{}", 1);
