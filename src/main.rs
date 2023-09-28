@@ -20,6 +20,9 @@ fn main() {
 
     for mut i in &mut noisemap {
         //TODO: not modifying anything !!! probably need to mody the value at noisemap[x][y]...
+        //shit!!! dont do it like this, this results in a cave SYSTEM, you only need 1 tunnel, 
+        //so use the noisemap to offset a direction 
+        //and that way you only have 1 tunnel
         if i < &mut -0.25 || i > &mut 0.25 {
             i = &mut 1.0;
             println!("{}", 1);
