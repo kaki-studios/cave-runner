@@ -3,20 +3,36 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use bevy::input::mouse::MouseWheel;
 use bevy::input::mouse::MouseScrollUnit;
-use noise::{Fbm, Perlin};
+use noise::{RidgedMulti, Worley, Abs, Fbm, Perlin, OpenSimplex};
 use noise::utils::{NoiseMapBuilder, PlaneMapBuilder};
 
 
 
 fn main() {
-    let fbm = Fbm::<Perlin>::new(0);
+    let fbm = Fbm::<OpenSimplex>::new(509435);
 
-    PlaneMapBuilder::<_, 2>::new(&fbm)
+    let mut noisemap = PlaneMapBuilder::<_, 2>::new(&fbm)
             .set_size(1000, 1000)
             .set_x_bounds(-5.0, 5.0)
             .set_y_bounds(-5.0, 5.0)
-            .build()
-            .write_to_file("fbm.png");
+            .build();
+
+
+    for mut i in &mut noisemap {
+        //TODO: not modifying anything !!! probably need to mody the value at noisemap[x][y]...
+        if i < &mut -0.25 || i > &mut 0.25 {
+            i = &mut 1.0;
+            println!("{}", 1);
+            
+        }
+        else {
+            i = &mut 0.0;
+            println!("{}", 0);
+        }
+        
+    }
+
+    noisemap.write_to_file("fbm9.png");
 
 
 
