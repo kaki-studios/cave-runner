@@ -3,8 +3,23 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use bevy::input::mouse::MouseWheel;
 use bevy::input::mouse::MouseScrollUnit;
+use noise::{Fbm, Perlin};
+use noise::utils::{NoiseMapBuilder, PlaneMapBuilder};
+
+
 
 fn main() {
+    let fbm = Fbm::<Perlin>::new(0);
+
+    PlaneMapBuilder::<_, 2>::new(&fbm)
+            .set_size(1000, 1000)
+            .set_x_bounds(-5.0, 5.0)
+            .set_y_bounds(-5.0, 5.0)
+            .build()
+            .write_to_file("fbm.png");
+
+
+
     App::new()
         .add_plugins(DefaultPlugins)
         .add_systems(Startup,  setup_physics)
@@ -14,6 +29,20 @@ fn main() {
         .insert_resource(RapierContext::default())
         
         .run();
+
+
+
+    
+
+    
+
+
+    
+
+    
+     
+    
+    
 }
 
 
@@ -113,10 +142,10 @@ fn cast_ray(
         let solid = true;
         let filter = QueryFilter::default();
 
-        if let Some((entity, toi)) = rapier_context.cast_ray(ray_pos, ray_dir, max_toi, solid, filter) {
+        if let Some((entity, _toi)) = rapier_context.cast_ray(ray_pos, ray_dir, max_toi, solid, filter) {
             // The first collider hit has the entity `entity` and it hit after
             // the ray travelled a distance equal to `ray_dir * toi`.
-            let hit_point = ray_pos + ray_dir * toi;
+            //let hit_point = ray_pos + ray_dir * toi;
             //println!("Entity {:?} hit at point {}", entity, hit_point);
             
             println!("raycast id {}", entity.index())

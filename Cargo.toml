@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 bevy = { version = "0.11.2", features = ["dynamic_linking"] }
 bevy_rapier2d = { version = "0.22.0", features = [ "debug-render-2d" ] }
+noise = { version = "0.8.2", features = ["images"] }
 #remove dynamic linking when releasing game!!
 
 # Enable a small amount of optimization in debug mode
