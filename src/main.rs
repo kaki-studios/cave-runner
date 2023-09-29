@@ -3,46 +3,18 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use bevy::input::mouse::MouseWheel;
 use bevy::input::mouse::MouseScrollUnit;
-use noise::{RidgedMulti, Worley, Abs, Fbm, Perlin, OpenSimplex};
-use noise::utils::{NoiseMapBuilder, PlaneMapBuilder};
+use noise::utils::NoiseMap;
+use noise::{Fbm, OpenSimplex};
+use noise::utils::{PlaneMapBuilder, NoiseMapBuilder};
+use rand::Rng;
 
-
+#[derive(Resource)]
+struct NoiseMapData {
+    noise: NoiseMap
+}
 
 fn main() {
-    let fbm = Fbm::<OpenSimplex>::new(509435);
-
-    let mut noisemap = PlaneMapBuilder::<_, 2>::new(&fbm)
-            .set_size(1000, 1000)
-            .set_x_bounds(-5.0, 5.0)
-            .set_y_bounds(-5.0, 5.0)
-            .build();
-
-
-    for mut i in &mut noisemap {
-        //TODO: not modifying anything !!! probably need to mody the value at noisemap[x][y]...
-        //shit!!! dont do it like this, this results in a cave SYSTEM, you only need 1 tunnel, 
-        //so use the noisemap to offset a direction 
-        //and that way you only have 1 tunnel
-
-
-        //youtube quote: 
-        //The solution to generating caves.
-        //Takes its current XYZ coordinate and generates 3 octaves of perlin noise in order to determine an xyz offset to move towards. 
-        //Then it shifts to that offset and places a cell, and repeats that cycle every frame.
-        //this will also work better than premade maps for infinite generation
-        if i < &mut -0.25 || i > &mut 0.25 {
-            i = &mut 1.0;
-            println!("{}", 1);
-            
-        }
-        else {
-            i = &mut 0.0;
-            println!("{}", 0);
-        }
-        
-    }
-
-    noisemap.write_to_file("fbm9.png");
+    
 
 
 
@@ -50,7 +22,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_systems(Startup,  setup_physics)
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
-        .add_systems(Update, (control_zoom, cast_ray))
+        .add_systems(Update, (control_zoom, cast_ray, move_cube))
         .add_plugins(RapierDebugRenderPlugin::default())
         .insert_resource(RapierContext::default())
         
@@ -74,6 +46,72 @@ fn main() {
 
 
 fn setup_physics(mut commands: Commands) {
+    let mut rng = rand::thread_rng();
+    let fbm = Fbm::<OpenSimplex>::new(rng.gen_range(0..9999));
+    
+    
+    
+    let noisemap = PlaneMapBuilder::<_, 2>::new(&fbm)
+            .set_size(1000, 1000)
+            .set_x_bounds(-5.0, 5.0)
+            .set_y_bounds(-5.0, 5.0)
+            .build();
+    
+    for x in 0..10 {
+        for y  in 0..10 {
+
+
+            println!("noismap value: {}", noisemap[(x as usize, y as usize)]);
+
+        }
+    }
+
+    
+    //shit!!! dont do it like this, this results in a cave SYSTEM, you only need 1 tunnel, 
+    //so use the noisemap to offset a direction 
+    //and that way you only have 1 tunnel
+
+
+    //youtube quote: 
+    //The solution to generating caves.
+    //Takes its current XY coordinate and queries perlin noise in order to determine an xy offset to move towards. 
+    //NOTE: since perlin noise returns only 1 value, you should use this as the direction (angle) to travel towards (also need speed parameter)
+    //Then it shifts to that offset and places a cell, and repeats that cycle every frame.
+    //this will also work better than premade maps for infinite generation
+    commands.spawn(SpriteBundle {
+        sprite: Sprite {
+            color: Color::rgb(0.25, 0.25, 0.75),
+            custom_size: Some(Vec2::new(50.0, 50.0)),
+            ..default()
+        },
+        transform: Transform::from_translation(Vec3::new(0., 0., 0.)),
+        ..default()
+    });
+        
+
+    noisemap.write_to_file("fbm11.png");
+    commands.insert_resource(NoiseMapData {
+        noise: noisemap
+    });
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     commands.spawn(Camera2dBundle::default());
     /* Create the ground. */
     let ground = commands
@@ -149,6 +187,33 @@ fn control_zoom (
 
     
 }
+
+fn move_cube(
+
+
+    mut cubes: Query<(&mut GlobalTransform, &mut Transform), With<Sprite>>,
+    noisemap: Res<NoiseMapData>,
+    time: Res<Time>
+) {
+    for mut cube in cubes.iter_mut() {
+        //cube.translation.y += ;
+        
+        cube.0.translation().x += 50.0 * time.delta_seconds();
+        
+        //TODO: THIS IS GOOFY AHH SHIT
+        let translation = cube.0.translation().clone();
+        
+        cube.1.rotate_local(Quat::from_euler(EulerRot::XYZ, 0.0, 0.0, noisemap.noise[(translation.x as usize, translation.y as usize)] as f32 ));
+    }
+
+}
+
+
+
+
+
+
+
 
 fn cast_ray(
     rapier_context: Res<RapierContext>,
