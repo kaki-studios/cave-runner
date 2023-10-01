@@ -1,12 +1,16 @@
 use bevy::input::mouse::MouseMotion;
 use bevy::prelude::*;
+use bevy::transform::commands;
 use bevy_rapier2d::prelude::*;
 use bevy::input::mouse::MouseWheel;
 use bevy::input::mouse::MouseScrollUnit;
 use noise::utils::NoiseMap;
-use noise::{Fbm, OpenSimplex};
+use noise::{Fbm, OpenSimplex, Perlin, Worley, BasicMulti, Billow, RidgedMulti, Value};
 use noise::utils::{PlaneMapBuilder, NoiseMapBuilder};
 use rand::Rng;
+use std::f32::consts::PI;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy::sprite::MaterialMesh2dBundle;
 
 #[derive(Resource)]
 struct NoiseMapData {
@@ -24,6 +28,7 @@ fn main() {
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_systems(Update, (control_zoom, cast_ray, move_cube))
         .add_plugins(RapierDebugRenderPlugin::default())
+        .add_plugins(WorldInspectorPlugin::new())
         .insert_resource(RapierContext::default())
         
         .run();
@@ -45,7 +50,7 @@ fn main() {
 
 
 
-fn setup_physics(mut commands: Commands) {
+fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
     let mut rng = rand::thread_rng();
     let fbm = Fbm::<OpenSimplex>::new(rng.gen_range(0..9999));
     
@@ -57,16 +62,9 @@ fn setup_physics(mut commands: Commands) {
             .set_y_bounds(-5.0, 5.0)
             .build();
     
-    for x in 0..10 {
-        for y  in 0..10 {
+    println!("{}, {:?}", noisemap.size().0, noisemap.size().1);
 
-
-            println!("noismap value: {}", noisemap[(x as usize, y as usize)]);
-
-        }
-    }
-
-    
+    println!("{}", usize::MAX);
     //shit!!! dont do it like this, this results in a cave SYSTEM, you only need 1 tunnel, 
     //so use the noisemap to offset a direction 
     //and that way you only have 1 tunnel
@@ -85,8 +83,9 @@ fn setup_physics(mut commands: Commands) {
             ..default()
         },
         transform: Transform::from_translation(Vec3::new(0., 0., 0.)),
+        texture: asset_server.load("square.png"),
         ..default()
-    });
+    }).insert(PlayerMarker);
         
 
     noisemap.write_to_file("fbm11.png");
@@ -142,7 +141,8 @@ fn setup_physics(mut commands: Commands) {
         
 }
 
-
+#[derive(Component)]
+struct PlayerMarker;
 
 
 
@@ -191,21 +191,50 @@ fn control_zoom (
 fn move_cube(
 
 
-    mut cubes: Query<(&mut GlobalTransform, &mut Transform), With<Sprite>>,
+    mut cubes: Query<&mut Transform, With<PlayerMarker>>,
     noisemap: Res<NoiseMapData>,
-    time: Res<Time>
+    time: Res<Time>,
+    mut gizmos: Gizmos,
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     for mut cube in cubes.iter_mut() {
         //cube.translation.y += ;
+        let rotation = cube.rotation.clone();     
+        let translation = cube.translation.clone();
+
+        let movement_direction = cube.rotation * Vec3::X;
+
+        cube.translation += movement_direction * 100.0 * time.delta_seconds();
         
-        cube.0.translation().x += 50.0 * time.delta_seconds();
         
-        //TODO: THIS IS GOOFY AHH SHIT
-        let translation = cube.0.translation().clone();
+        println!("x: {}", translation.x.abs() as usize);
+        println!("y: {}", translation.y.abs() as usize);
+
+
         
-        cube.1.rotate_local(Quat::from_euler(EulerRot::XYZ, 0.0, 0.0, noisemap.noise[(translation.x as usize, translation.y as usize)] as f32 ));
+        
+        
+        cube.rotate_z(noisemap.noise[(((translation.x + 500.0) % 1000.0).abs() as usize, ((translation.y + 500.0) % 1000.0).abs() as usize)] as f32 * 0.05);
+
+        gizmos.line(cube.translation, movement_direction * 100.0 + cube.translation, Color::LIME_GREEN);
+
+        // Circle
+        commands.spawn(MaterialMesh2dBundle {
+            mesh: meshes.add(shape::Circle::new(15.).into()).into(),
+            material: materials.add(ColorMaterial::from(Color::PURPLE)),
+            transform: Transform::from_translation(cube.translation),
+            ..default()
+        });
     }
 
+}
+
+pub fn direction(rotation_angle: f32) -> Vec3 {
+        let (y, x) = (rotation_angle).sin_cos();
+
+        Vec3::new(x, y, 0.0).normalize()
 }
 
 
