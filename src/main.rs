@@ -4,7 +4,9 @@ use bevy::transform::commands;
 use bevy_rapier2d::prelude::*;
 use bevy::input::mouse::MouseWheel;
 use bevy::input::mouse::MouseScrollUnit;
+use noise::permutationtable::PermutationTable;
 use noise::utils::NoiseMap;
+use noise::core::perlin::perlin_2d;
 use noise::{Fbm, OpenSimplex, Perlin, Worley, BasicMulti, Billow, RidgedMulti, Value};
 use noise::utils::{PlaneMapBuilder, NoiseMapBuilder};
 use rand::Rng;
@@ -65,17 +67,7 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
     println!("{}, {:?}", noisemap.size().0, noisemap.size().1);
 
     println!("{}", usize::MAX);
-    //shit!!! dont do it like this, this results in a cave SYSTEM, you only need 1 tunnel, 
-    //so use the noisemap to offset a direction 
-    //and that way you only have 1 tunnel
-
-
-    //youtube quote: 
-    //The solution to generating caves.
-    //Takes its current XY coordinate and queries perlin noise in order to determine an xy offset to move towards. 
-    //NOTE: since perlin noise returns only 1 value, you should use this as the direction (angle) to travel towards (also need speed parameter)
-    //Then it shifts to that offset and places a cell, and repeats that cycle every frame.
-    //this will also work better than premade maps for infinite generation
+    
     commands.spawn(SpriteBundle {
         sprite: Sprite {
             color: Color::rgb(0.25, 0.25, 0.75),
@@ -92,14 +84,14 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.insert_resource(NoiseMapData {
         noise: noisemap
     });
-    
+    let hasher = PermutationTable::new(0);
 
 
 
 
 
-
-
+    //TODO:fix this so that result ins't 0 so that you can get perlin values at any position possible
+    println!("result: {}", perlin_2d::<PermutationTable>([200.0_f64, 10000.0_f64], &hasher));
 
 
 
@@ -200,7 +192,17 @@ fn move_cube(
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     for mut cube in cubes.iter_mut() {
-        //cube.translation.y += ;
+
+        
+        let translation = cube.translation.clone();
+        cube.translation.y += noisemap.noise.get_value((translation.x % 1000.0).abs() as usize, (translation.y  % 1000.0).abs() as usize) as f32 * time.delta_seconds() * 200.0;
+        cube.translation.x += 50.0 * time.delta_seconds();
+        println!("{}, {:?}", (translation.x % 1000.0).abs() as usize, (translation.y  % 1000.0).abs() as usize);
+
+
+        
+        //noisemap.as_ref().noise.set_size(translation.x.abs() as usize + 1000_usize, translation.y.abs() as usize + 1000_usize);
+        /*
         let rotation = cube.rotation.clone();     
         let translation = cube.translation.clone();
 
@@ -219,6 +221,9 @@ fn move_cube(
         cube.rotate_z(noisemap.noise[(((translation.x + 500.0) % 1000.0).abs() as usize, ((translation.y + 500.0) % 1000.0).abs() as usize)] as f32 * 0.05);
 
         gizmos.line(cube.translation, movement_direction * 100.0 + cube.translation, Color::LIME_GREEN);
+        
+         */
+        
 
         // Circle
         commands.spawn(MaterialMesh2dBundle {
