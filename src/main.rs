@@ -198,7 +198,8 @@ fn move_cube(
         cube.translation.y += noisemap.noise.get_value((translation.x % 1000.0).abs() as usize, (translation.y  % 1000.0).abs() as usize) as f32 * time.delta_seconds() * 200.0;
         cube.translation.x += 50.0 * time.delta_seconds();
         println!("{}, {:?}", (translation.x % 1000.0).abs() as usize, (translation.y  % 1000.0).abs() as usize);
-
+        
+        
 
         
         //noisemap.as_ref().noise.set_size(translation.x.abs() as usize + 1000_usize, translation.y.abs() as usize + 1000_usize);
