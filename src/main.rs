@@ -1,5 +1,4 @@
 use bevy::input::mouse::MouseMotion;
-use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use bevy::input::mouse::MouseWheel;
 use bevy::input::mouse::MouseScrollUnit;
@@ -11,6 +10,12 @@ use noise::utils::{PlaneMapBuilder, NoiseMapBuilder};
 use rand::Rng;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy::sprite::MaterialMesh2dBundle;
+use bevy::{
+    
+    prelude::*,
+    window::PresentMode,
+};
+
 
 
 
@@ -25,7 +30,30 @@ fn main() {
 
 
     App::new()
-        .add_plugins(DefaultPlugins)
+
+        .add_plugins((
+            DefaultPlugins.set(WindowPlugin {
+                primary_window: Some(Window {
+                    title: "cave-runner".into(),
+                    resolution: (1000., 500.).into(),
+                    present_mode: PresentMode::Immediate,
+                    //vsync still on?
+                    // Tells wasm to resize the window according to the available canvas
+                    fit_canvas_to_parent: true,
+                    // Tells wasm not to override default event handling, like F5, Ctrl+R etc.
+                    prevent_default_event_handling: false,
+                    
+                    // This will spawn an invisible window
+                    // The window will be made visible in the make_visible() system after 3 frames.
+                    // This is useful when you want to avoid the white window that shows up before the GPU is ready to render the app.
+                    transparent: false,
+                    
+                    ..default()
+                }),
+                ..default()
+            }),
+            
+        ))
         .add_systems(Startup,  setup_physics)
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_systems(Update, (control_zoom, cast_ray, move_cube))
