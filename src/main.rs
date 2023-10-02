@@ -1,22 +1,22 @@
 use bevy::input::mouse::MouseMotion;
 use bevy::prelude::*;
-use bevy::transform::commands;
 use bevy_rapier2d::prelude::*;
 use bevy::input::mouse::MouseWheel;
 use bevy::input::mouse::MouseScrollUnit;
 use noise::permutationtable::PermutationTable;
-use noise::utils::NoiseMap;
-use noise::core::perlin::perlin_2d;
-use noise::{Fbm, OpenSimplex, Perlin, Worley, BasicMulti, Billow, RidgedMulti, Value};
+use noise::core::perlin::*;
+use noise::core::open_simplex::*;
+use noise::{Fbm, OpenSimplex,};
 use noise::utils::{PlaneMapBuilder, NoiseMapBuilder};
 use rand::Rng;
-use std::f32::consts::PI;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy::sprite::MaterialMesh2dBundle;
 
+
+
 #[derive(Resource)]
-struct NoiseMapData {
-    noise: NoiseMap
+struct HasherData {
+    hasher: PermutationTable
 }
 
 fn main() {
@@ -81,17 +81,24 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
         
 
     noisemap.write_to_file("fbm11.png");
-    commands.insert_resource(NoiseMapData {
-        noise: noisemap
+    let hasher = PermutationTable::new(rng.gen_range(0..9999));
+    
+    
+    
+    commands.insert_resource(HasherData {
+        hasher: hasher
     });
-    let hasher = PermutationTable::new(0);
+    
+      
 
 
+    for x in 0..10 {
+        for y in 0..10 {
 
-
-
+            println!("result: {}", perlin_2d::<PermutationTable>([x as f64 + 0.5_f64, y as f64 + 0.5_f64], &hasher));
+        }
+    }
     //TODO:fix this so that result ins't 0 so that you can get perlin values at any position possible
-    println!("result: {}", perlin_2d::<PermutationTable>([200.0_f64, 10000.0_f64], &hasher));
 
 
 
@@ -151,6 +158,9 @@ fn control_zoom (
     for mut camera in cameras.iter_mut() {
         //print!("Camera Scale: {}", camera.scale);
 
+
+        
+
         if buttons.pressed(MouseButton::Left) {
 
             for ev in mouse_evr.iter() {
@@ -184,9 +194,8 @@ fn move_cube(
 
 
     mut cubes: Query<&mut Transform, With<PlayerMarker>>,
-    noisemap: Res<NoiseMapData>,
+    hasher: Res<HasherData>,
     time: Res<Time>,
-    mut gizmos: Gizmos,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -195,14 +204,15 @@ fn move_cube(
 
         
         let translation = cube.translation.clone();
-        cube.translation.y += noisemap.noise.get_value((translation.x % 1000.0).abs() as usize, (translation.y  % 1000.0).abs() as usize) as f32 * time.delta_seconds() * 200.0;
-        cube.translation.x += 50.0 * time.delta_seconds();
-        println!("{}, {:?}", (translation.x % 1000.0).abs() as usize, (translation.y  % 1000.0).abs() as usize);
+        //cube.translation.y += noisemap.noise.get_value((translation.x % 1000.0).abs() as usize, (translation.y  % 1000.0).abs() as usize) as f32 * time.delta_seconds() * 200.0;
+        cube.translation.y += open_simplex_2d::<PermutationTable>([translation.x as f64 / 100.0_f64, translation.y as f64 / 100.0_f64], &hasher.hasher) as f32 * time.delta_seconds() * 10000.0;
+        cube.translation.x += 1000.0 * time.delta_seconds();
+        //println!("{}, {:?}", (translation.x % 1000.0).abs() as usize, (translation.y  % 1000.0).abs() as usize);
         
         
 
         
-        //noisemap.as_ref().noise.set_size(translation.x.abs() as usize + 1000_usize, translation.y.abs() as usize + 1000_usize);
+        
         /*
         let rotation = cube.rotation.clone();     
         let translation = cube.translation.clone();
@@ -215,7 +225,7 @@ fn move_cube(
         println!("x: {}", translation.x.abs() as usize);
         println!("y: {}", translation.y.abs() as usize);
 
-
+        
         
         
         
@@ -228,8 +238,8 @@ fn move_cube(
 
         // Circle
         commands.spawn(MaterialMesh2dBundle {
-            mesh: meshes.add(shape::Circle::new(15.).into()).into(),
-            material: materials.add(ColorMaterial::from(Color::PURPLE)),
+            mesh: meshes.add(shape::Circle::new(500.0).into()).into(),
+            material: materials.add(ColorMaterial::from(Color::MIDNIGHT_BLUE)),
             transform: Transform::from_translation(cube.translation),
             ..default()
         });
