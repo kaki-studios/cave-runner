@@ -2,9 +2,9 @@ use bevy::input::mouse::MouseMotion;
 use bevy_rapier2d::prelude::*;
 use bevy::input::mouse::MouseWheel;
 use bevy::input::mouse::MouseScrollUnit;
+use noise::BasicMulti;
 use noise::permutationtable::PermutationTable;
-use noise::core::perlin::*;
-use noise::core::open_simplex::*;
+use noise::core::{open_simplex::*, perlin::*, worley::*};
 use noise::{Fbm, OpenSimplex,};
 use noise::utils::{PlaneMapBuilder, NoiseMapBuilder};
 use rand::Rng;
@@ -16,7 +16,10 @@ use bevy::{
     window::PresentMode,
 };
 
-
+#[derive(Resource)]
+struct VertsTest {
+    verts: Vec<Vec2>
+}
 
 
 #[derive(Resource)]
@@ -82,7 +85,7 @@ fn main() {
 
 fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
     let mut rng = rand::thread_rng();
-    let fbm = Fbm::<OpenSimplex>::new(rng.gen_range(0..9999));
+    let fbm = Fbm::<BasicMulti<OpenSimplex>>::new(rng.gen_range(0..9999));
     
     
     
@@ -110,11 +113,16 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     noisemap.write_to_file("fbm11.png");
     let hasher = PermutationTable::new(rng.gen_range(0..9999));
+
     
     
     
     commands.insert_resource(HasherData {
         hasher: hasher
+    });
+
+    commands.insert_resource(VertsTest {
+        verts: vec![]
     });
     
       
@@ -126,7 +134,7 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
             println!("result: {}", perlin_2d::<PermutationTable>([x as f64 + 0.5_f64, y as f64 + 0.5_f64], &hasher));
         }
     }
-    //TODO:fix this so that result ins't 0 so that you can get perlin values at any position possible
+    
 
 
 
@@ -227,14 +235,16 @@ fn move_cube(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    mut gizmos: Gizmos,
+    mut verts: ResMut<VertsTest>
 ) {
     for mut cube in cubes.iter_mut() {
 
         
         let translation = cube.translation.clone();
         //cube.translation.y += noisemap.noise.get_value((translation.x % 1000.0).abs() as usize, (translation.y  % 1000.0).abs() as usize) as f32 * time.delta_seconds() * 200.0;
-        cube.translation.y += open_simplex_2d::<PermutationTable>([translation.x as f64 / 100.0_f64, translation.y as f64 / 100.0_f64], &hasher.hasher) as f32 * time.delta_seconds() * 10000.0;
-        cube.translation.x += 1000.0 * time.delta_seconds();
+        cube.translation.y += perlin_2d::<PermutationTable>([translation.x as f64 / 300.0_f64, translation.y as f64 / 300.0_f64], &hasher.hasher) as f32 * time.delta_seconds() * 20000.0;
+        cube.translation.x += 3000.0 * time.delta_seconds();
         //println!("{}, {:?}", (translation.x % 1000.0).abs() as usize, (translation.y  % 1000.0).abs() as usize);
         
         
@@ -266,11 +276,20 @@ fn move_cube(
 
         // Circle
         commands.spawn(MaterialMesh2dBundle {
-            mesh: meshes.add(shape::Circle::new(500.0).into()).into(),
+            mesh: meshes.add(shape::Quad::new(Vec2::splat(500.0)).into()).into(),
             material: materials.add(ColorMaterial::from(Color::MIDNIGHT_BLUE)),
             transform: Transform::from_translation(cube.translation),
             ..default()
         });
+
+        verts.verts.extend([Vec2::new(cube.translation.x, cube.translation.y + 250.0)].iter());
+        verts.verts.extend([Vec2::new(cube.translation.x, cube.translation.y - 250.0)].iter());
+
+        for i in verts.verts.iter() {
+            gizmos.line_2d(Vec2::new(i.x - 0.5, i.y - 0.5), *i, Color::LIME_GREEN)
+        }
+
+        //simple verts working!
     }
 
 }
