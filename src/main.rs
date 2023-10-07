@@ -4,7 +4,7 @@ use bevy::input::mouse::MouseWheel;
 use bevy::input::mouse::MouseScrollUnit;
 use noise::BasicMulti;
 use noise::permutationtable::PermutationTable;
-use noise::core::{open_simplex::*, perlin::*, worley::*};
+use noise::core::{open_simplex::*, perlin::*, worley::*, perlin_surflet::*};
 use noise::{Fbm, OpenSimplex,};
 use noise::utils::{PlaneMapBuilder, NoiseMapBuilder};
 use rand::Rng;
@@ -243,7 +243,7 @@ fn move_cube(
         
         let translation = cube.translation.clone();
         //cube.translation.y += noisemap.noise.get_value((translation.x % 1000.0).abs() as usize, (translation.y  % 1000.0).abs() as usize) as f32 * time.delta_seconds() * 200.0;
-        cube.translation.y += perlin_2d::<PermutationTable>([translation.x as f64 / 300.0_f64, translation.y as f64 / 300.0_f64], &hasher.hasher) as f32 * time.delta_seconds() * 20000.0;
+        cube.translation.y += perlin_surflet_2d::<PermutationTable>([translation.x as f64 / 300.0_f64, translation.y as f64 / 300.0_f64], &hasher.hasher) as f32 * time.delta_seconds() * 20000.0;
         cube.translation.x += 3000.0 * time.delta_seconds();
         //println!("{}, {:?}", (translation.x % 1000.0).abs() as usize, (translation.y  % 1000.0).abs() as usize);
         
@@ -275,12 +275,7 @@ fn move_cube(
         
 
         // Circle
-        commands.spawn(MaterialMesh2dBundle {
-            mesh: meshes.add(shape::Quad::new(Vec2::splat(500.0)).into()).into(),
-            material: materials.add(ColorMaterial::from(Color::MIDNIGHT_BLUE)),
-            transform: Transform::from_translation(cube.translation),
-            ..default()
-        });
+        
 
         verts.verts.extend([Vec2::new(cube.translation.x, cube.translation.y + 250.0)].iter());
         verts.verts.extend([Vec2::new(cube.translation.x, cube.translation.y - 250.0)].iter());
