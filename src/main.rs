@@ -240,7 +240,7 @@ fn move_cube(
 ) {
     for mut cube in cubes.iter_mut() {
 
-        
+        /*
         let translation = cube.translation.clone();
         //cube.translation.y += noisemap.noise.get_value((translation.x % 1000.0).abs() as usize, (translation.y  % 1000.0).abs() as usize) as f32 * time.delta_seconds() * 200.0;
         cube.translation.y += perlin_surflet_2d::<PermutationTable>([translation.x as f64 / 300.0_f64, translation.y as f64 / 300.0_f64], &hasher.hasher) as f32 * time.delta_seconds() * 20000.0;
@@ -248,16 +248,20 @@ fn move_cube(
         //println!("{}, {:?}", (translation.x % 1000.0).abs() as usize, (translation.y  % 1000.0).abs() as usize);
         
         
+        
+        */
+        
+        
 
         
         
-        /*
+        
         let rotation = cube.rotation.clone();     
         let translation = cube.translation.clone();
 
         let movement_direction = cube.rotation * Vec3::X;
 
-        cube.translation += movement_direction * 100.0 * time.delta_seconds();
+        cube.translation += movement_direction * 200.0 * time.delta_seconds();
         
         
         println!("x: {}", translation.x.abs() as usize);
@@ -267,18 +271,19 @@ fn move_cube(
         
         
         
-        cube.rotate_z(noisemap.noise[(((translation.x + 500.0) % 1000.0).abs() as usize, ((translation.y + 500.0) % 1000.0).abs() as usize)] as f32 * 0.05);
+        cube.rotate_z(open_simplex_2d::<PermutationTable>([translation.x as f64 / 300.0_f64, translation.y as f64 / 300.0_f64], &hasher.hasher) as f32 * time.delta_seconds() * 5.0);
 
         gizmos.line(cube.translation, movement_direction * 100.0 + cube.translation, Color::LIME_GREEN);
         
-         */
+        
         
 
-        // Circle
+        let point_up: Vec2 = Vec2::new(-movement_direction.y, movement_direction.x) * 50.0 + Vec2::new(cube.translation.x, cube.translation.y);
+        let point_down: Vec2 = Vec2::new(movement_direction.y, -movement_direction.x) * 50.0 + Vec2::new(cube.translation.x, cube.translation.y);
         
 
-        verts.verts.extend([Vec2::new(cube.translation.x, cube.translation.y + 250.0)].iter());
-        verts.verts.extend([Vec2::new(cube.translation.x, cube.translation.y - 250.0)].iter());
+        verts.verts.extend([point_up].iter());
+        verts.verts.extend([point_down].iter());
 
         for i in verts.verts.iter() {
             gizmos.line_2d(Vec2::new(i.x - 0.5, i.y - 0.5), *i, Color::LIME_GREEN)
