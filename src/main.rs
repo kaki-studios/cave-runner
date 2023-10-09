@@ -2,19 +2,18 @@ use bevy::input::mouse::MouseMotion;
 use bevy_rapier2d::prelude::*;
 use bevy::input::mouse::MouseWheel;
 use bevy::input::mouse::MouseScrollUnit;
-use noise::BasicMulti;
 use noise::permutationtable::PermutationTable;
-use noise::core::{open_simplex::*, perlin::*, worley::*, perlin_surflet::*};
-use noise::{Fbm, OpenSimplex,};
-use noise::utils::{PlaneMapBuilder, NoiseMapBuilder};
+use noise::core::open_simplex::*;
 use rand::Rng;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use bevy::sprite::MaterialMesh2dBundle;
 use bevy::{
     
     prelude::*,
     window::PresentMode,
 };
+
+mod raycast;
+use raycast::RaycastPlugin;
 
 #[derive(Resource)]
 struct VertsTest {
@@ -34,12 +33,12 @@ fn main() {
 
     App::new()
 
-        .add_plugins((
-            DefaultPlugins.set(WindowPlugin {
+        .add_plugins(
+            (DefaultPlugins.set(WindowPlugin {
                 primary_window: Some(Window {
                     title: "cave-runner".into(),
                     resolution: (1000., 500.).into(),
-                    present_mode: PresentMode::AutoNoVsync,
+                    present_mode: PresentMode::AutoVsync,
                     //vsync still on?
                     // Tells wasm to resize the window according to the available canvas
                     fit_canvas_to_parent: true,
@@ -58,8 +57,8 @@ fn main() {
             
         ))
         .add_systems(Startup,  setup_physics)
-        .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
-        .add_systems(Update, (control_zoom, cast_ray, move_cube))
+        .add_plugins((RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0), RaycastPlugin))
+        .add_systems(Update, (control_zoom, move_cube))
         .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(WorldInspectorPlugin::new())
         .insert_resource(RapierContext::default())
@@ -85,19 +84,7 @@ fn main() {
 
 fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
     let mut rng = rand::thread_rng();
-    let fbm = Fbm::<BasicMulti<OpenSimplex>>::new(rng.gen_range(0..9999));
     
-    
-    
-    let noisemap = PlaneMapBuilder::<_, 2>::new(&fbm)
-            .set_size(1000, 1000)
-            .set_x_bounds(-5.0, 5.0)
-            .set_y_bounds(-5.0, 5.0)
-            .build();
-    
-    println!("{}, {:?}", noisemap.size().0, noisemap.size().1);
-
-    println!("{}", usize::MAX);
     
     commands.spawn(SpriteBundle {
         sprite: Sprite {
@@ -111,7 +98,7 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
     }).insert(PlayerMarker);
         
 
-    noisemap.write_to_file("fbm11.png");
+    
     let hasher = PermutationTable::new(rng.gen_range(0..9999));
 
     
@@ -128,12 +115,7 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
       
 
 
-    for x in 0..10 {
-        for y in 0..10 {
-
-            println!("result: {}", perlin_2d::<PermutationTable>([x as f64 + 0.5_f64, y as f64 + 0.5_f64], &hasher));
-        }
-    }
+    
     
 
 
@@ -232,61 +214,47 @@ fn move_cube(
     mut cubes: Query<&mut Transform, With<PlayerMarker>>,
     hasher: Res<HasherData>,
     time: Res<Time>,
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
     mut gizmos: Gizmos,
     mut verts: ResMut<VertsTest>
 ) {
     for mut cube in cubes.iter_mut() {
 
-        /*
-        let translation = cube.translation.clone();
-        //cube.translation.y += noisemap.noise.get_value((translation.x % 1000.0).abs() as usize, (translation.y  % 1000.0).abs() as usize) as f32 * time.delta_seconds() * 200.0;
-        cube.translation.y += perlin_surflet_2d::<PermutationTable>([translation.x as f64 / 300.0_f64, translation.y as f64 / 300.0_f64], &hasher.hasher) as f32 * time.delta_seconds() * 20000.0;
-        cube.translation.x += 3000.0 * time.delta_seconds();
-        //println!("{}, {:?}", (translation.x % 1000.0).abs() as usize, (translation.y  % 1000.0).abs() as usize);
         
-        
-        
-        */
-        
-        
-
-        
-        
-        
-        let rotation = cube.rotation.clone();     
         let translation = cube.translation.clone();
 
         let movement_direction = cube.rotation * Vec3::X;
 
         cube.translation += movement_direction * 200.0 * time.delta_seconds();
         
-        
-        println!("x: {}", translation.x.abs() as usize);
-        println!("y: {}", translation.y.abs() as usize);
-
-        
-        
-        
-        
         cube.rotate_z(open_simplex_2d::<PermutationTable>([translation.x as f64 / 300.0_f64, translation.y as f64 / 300.0_f64], &hasher.hasher) as f32 * time.delta_seconds() * 5.0);
 
         gizmos.line(cube.translation, movement_direction * 100.0 + cube.translation, Color::LIME_GREEN);
         
-        
-        
-
         let point_up: Vec2 = Vec2::new(-movement_direction.y, movement_direction.x) * 50.0 + Vec2::new(cube.translation.x, cube.translation.y);
         let point_down: Vec2 = Vec2::new(movement_direction.y, -movement_direction.x) * 50.0 + Vec2::new(cube.translation.x, cube.translation.y);
         
 
-        verts.verts.extend([point_up].iter());
-        verts.verts.extend([point_down].iter());
+        verts.verts.push(point_up);
+        verts.verts.push(point_down);
+
+        //BAD!! dependent on framerate
+        if verts.verts.len() > 10000 {
+            for i in 0..verts.verts.len() {
+            
+
+                //remove the start of the cave, so that 
+                if i < verts.verts.len() - 10000 {
+                    verts.verts.remove(i);
+                    
+                }
+            }
+        }
+        
+        
 
         for i in verts.verts.iter() {
-            gizmos.line_2d(Vec2::new(i.x - 0.5, i.y - 0.5), *i, Color::LIME_GREEN)
+            gizmos.line_2d(Vec2::new(i.x - 0.5, i.y - 0.5), *i, Color::LIME_GREEN);
+            
         }
 
         //simple verts working!
@@ -294,11 +262,6 @@ fn move_cube(
 
 }
 
-pub fn direction(rotation_angle: f32) -> Vec3 {
-        let (y, x) = (rotation_angle).sin_cos();
-
-        Vec3::new(x, y, 0.0).normalize()
-}
 
 
 
@@ -307,35 +270,35 @@ pub fn direction(rotation_angle: f32) -> Vec3 {
 
 
 
-fn cast_ray(
-    rapier_context: Res<RapierContext>,
+// fn cast_ray(
+//     rapier_context: Res<RapierContext>,
 
-    buttons: Res<Input<MouseButton>>,
+//     buttons: Res<Input<MouseButton>>,
    
 
-) {
+// ) {
 
 
 
-    if buttons.just_pressed(MouseButton::Left) {
+//     if buttons.just_pressed(MouseButton::Left) {
         
-        let ray_pos = Vec2::new(0.0, -200.0);
-        let ray_dir = Vec2::new(0.0, 1.0);
-        let max_toi = 400000.0;
-        let solid = true;
-        let filter = QueryFilter::default();
+//         let ray_pos = Vec2::new(0.0, -200.0);
+//         let ray_dir = Vec2::new(0.0, 1.0);
+//         let max_toi = 400000.0;
+//         let solid = true;
+//         let filter = QueryFilter::default();
 
-        if let Some((entity, _toi)) = rapier_context.cast_ray(ray_pos, ray_dir, max_toi, solid, filter) {
-            // The first collider hit has the entity `entity` and it hit after
-            // the ray travelled a distance equal to `ray_dir * toi`.
-            //let hit_point = ray_pos + ray_dir * toi;
-            //println!("Entity {:?} hit at point {}", entity, hit_point);
+//         if let Some((entity, _toi)) = rapier_context.cast_ray(ray_pos, ray_dir, max_toi, solid, filter) {
+//             // The first collider hit has the entity `entity` and it hit after
+//             // the ray travelled a distance equal to `ray_dir * toi`.
+//             //let hit_point = ray_pos + ray_dir * toi;
+//             //println!("Entity {:?} hit at point {}", entity, hit_point);
             
-            println!("raycast id {}", entity.index())
-        }
+//             println!("raycast id {}", entity.index())
+//         }
 
 
     
 
-    }
-}
+//     }
+// }
