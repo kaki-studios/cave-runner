@@ -1,7 +1,4 @@
-use bevy::input::mouse::MouseMotion;
 use bevy_rapier2d::prelude::*;
-use bevy::input::mouse::MouseWheel;
-use bevy::input::mouse::MouseScrollUnit;
 use noise::permutationtable::PermutationTable;
 use noise::core::open_simplex::*;
 use rand::Rng;
@@ -14,6 +11,9 @@ use bevy::{
 
 mod raycast;
 use raycast::RaycastPlugin;
+
+mod mousezoom;
+use mousezoom::MouseZoomPlugin;
 
 #[derive(Resource)]
 struct VertsTest {
@@ -57,8 +57,8 @@ fn main() {
             
         ))
         .add_systems(Startup,  setup_physics)
-        .add_plugins((RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0), RaycastPlugin))
-        .add_systems(Update, (control_zoom, move_cube))
+        .add_plugins((RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0), RaycastPlugin, MouseZoomPlugin))
+        .add_systems(Update, move_cube)
         .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(WorldInspectorPlugin::new())
         .insert_resource(RapierContext::default())
@@ -164,49 +164,49 @@ struct PlayerMarker;
 
 
 
-fn control_zoom (
+// fn control_zoom (
     
-    mut scroll_evr: EventReader<MouseWheel>,
-    mut mouse_evr: EventReader<MouseMotion>,
-    buttons: Res<Input<MouseButton>>,
-    mut cameras: Query<(&mut OrthographicProjection, &mut Transform), With<Camera2d>>,
+//     mut scroll_evr: EventReader<MouseWheel>,
+//     mut mouse_evr: EventReader<MouseMotion>,
+//     buttons: Res<Input<MouseButton>>,
+//     mut cameras: Query<(&mut OrthographicProjection, &mut Transform), With<Camera2d>>,
 
 
-) {
-    for mut camera in cameras.iter_mut() {
-        //print!("Camera Scale: {}", camera.scale);
+// ) {
+//     for mut camera in cameras.iter_mut() {
+//         //print!("Camera Scale: {}", camera.scale);
 
 
         
 
-        if buttons.pressed(MouseButton::Left) {
+//         if buttons.pressed(MouseButton::Left) {
 
-            for ev in mouse_evr.iter() {
+//             for ev in mouse_evr.iter() {
                 
-                camera.1.translation += Vec3::new(-ev.delta.x, ev.delta.y, 0.0) * camera.0.scale;
-            }
-        }
+//                 camera.1.translation += Vec3::new(-ev.delta.x, ev.delta.y, 0.0) * camera.0.scale;
+//             }
+//         }
 
         
 
 
         
-        for ev in scroll_evr.iter() {
-        match ev.unit {
-            MouseScrollUnit::Line => {
-                camera.0.scale -= ev.y / 10.0;
-                if camera.0.scale < 0.0 {camera.0.scale = 0.0}
+//         for ev in scroll_evr.iter() {
+//         match ev.unit {
+//             MouseScrollUnit::Line => {
+//                 camera.0.scale -= ev.y / 10.0;
+//                 if camera.0.scale < 0.0 {camera.0.scale = 0.0}
                 
-            }
-            MouseScrollUnit::Pixel => {
-                //println!("Scroll (pixel units): vertical: {}, horizontal: {}", ev.y, ev.x);
-            }
-        }
-    }
-    }
+//             }
+//             MouseScrollUnit::Pixel => {
+//                 //println!("Scroll (pixel units): vertical: {}, horizontal: {}", ev.y, ev.x);
+//             }
+//         }
+//     }
+//     }
 
     
-}
+// }
 
 fn move_cube(
 
@@ -261,44 +261,3 @@ fn move_cube(
     }
 
 }
-
-
-
-
-
-
-
-
-
-// fn cast_ray(
-//     rapier_context: Res<RapierContext>,
-
-//     buttons: Res<Input<MouseButton>>,
-   
-
-// ) {
-
-
-
-//     if buttons.just_pressed(MouseButton::Left) {
-        
-//         let ray_pos = Vec2::new(0.0, -200.0);
-//         let ray_dir = Vec2::new(0.0, 1.0);
-//         let max_toi = 400000.0;
-//         let solid = true;
-//         let filter = QueryFilter::default();
-
-//         if let Some((entity, _toi)) = rapier_context.cast_ray(ray_pos, ray_dir, max_toi, solid, filter) {
-//             // The first collider hit has the entity `entity` and it hit after
-//             // the ray travelled a distance equal to `ray_dir * toi`.
-//             //let hit_point = ray_pos + ray_dir * toi;
-//             //println!("Entity {:?} hit at point {}", entity, hit_point);
-            
-//             println!("raycast id {}", entity.index())
-//         }
-
-
-    
-
-//     }
-// }
