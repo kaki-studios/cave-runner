@@ -12,16 +12,17 @@ impl Plugin for MouseWorldPos {
 
 /// We will store the world position of the mouse cursor here.
 #[derive(Resource, Default)]
-struct MyWorldCoords(Vec2);
+pub struct MyWorldCoords(pub Vec2);
 
 /// Used to help identify our main camera
 #[derive(Component)]
-struct MainCamera;
+pub struct MainCamera;
 
 fn setup(mut commands: Commands) {
     commands.init_resource::<MyWorldCoords>();
     // Make sure to add the marker component when you set up your camera
-    commands.spawn((Camera2dBundle::default(), MainCamera));
+    //already spawning camera in main.rs
+    //commands.spawn((Camera2dBundle::default(), MainCamera));
 }
 
 fn my_cursor_system(
@@ -45,6 +46,6 @@ fn my_cursor_system(
         .map(|ray| ray.origin.truncate())
     {
         mycoords.0 = world_position;
-        eprintln!("World coords: {}/{}", world_position.x, world_position.y);
+        //eprintln!("World coords: {}/{}", world_position.x, world_position.y);
     }
 }

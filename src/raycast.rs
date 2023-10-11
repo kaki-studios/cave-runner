@@ -1,5 +1,9 @@
 use bevy::prelude::*;
+use bevy::transform::commands;
+use crate::{PlayerMarker, CubeQuery};
 use bevy_rapier2d::prelude::*;
+use crate::mouseworldpos::MyWorldCoords;
+use crate::MainCamera;
 pub struct RaycastPlugin;
 
 
@@ -15,20 +19,41 @@ fn cast_ray(
 
     buttons: Res<Input<MouseButton>>,
 
-) {
+    mousepos: Res<MyWorldCoords>,
 
+    mut q_camera: Query<&mut Transform, With<MainCamera>>,
+    mut gizmos: Gizmos,
+
+    cube: Option<Res<CubeQuery>>,
+    
+
+    mut commands: Commands
+
+) {
+    
+    
+    
+        
+    if let Some(cube) = cube {
+        q_camera.single_mut().translation = cube.cube.translation;
+    }
+    
+    //somehow raycast doesn't work perfectly after changing camera position to follow player...
+    let ray_pos = Vec2::new(q_camera.single().translation.x, q_camera.single().translation.y);
+    let ray_dir = mousepos.0;
+    gizmos.line_2d(ray_pos, ray_dir, Color::LIME_GREEN);
+    gizmos.circle_2d(mousepos.0, 5.0, Color::RED);
 
 
     if buttons.just_pressed(MouseButton::Left) {
         
-
         
-        let ray_pos = Vec2::new(0.0, -200.0);
-        let ray_dir = Vec2::new(0.0, 1.0);
-        let max_toi = 400_000.0;
-        let solid = true;
+        
+        
+        let max_toi = 4_000_000.0;
+        let solid = false;
         let filter = QueryFilter::default();
-
+        
 
         
 
@@ -37,7 +62,7 @@ fn cast_ray(
             // the ray travelled a distance (vector) equal to `ray_dir * toi`.
             //let hit_point = ray_pos + ray_dir * toi;
             //println!("Entity {:?} hit at point {}", entity, hit_point);
-
+            
             
 
 

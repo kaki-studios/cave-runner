@@ -15,12 +15,22 @@ use raycast::RaycastPlugin;
 mod mousezoom;
 use mousezoom::MouseZoomPlugin;
 
+mod mouseworldpos;
+use mouseworldpos::*;
+
+
 
 
 #[derive(Resource)]
 struct VertsTest {
     verts: Vec<Vec2>
 }
+
+#[derive(Resource)]
+struct CubeQuery {
+    cube: Transform
+}
+
 
 
 #[derive(Resource)]
@@ -59,7 +69,7 @@ fn main() {
             
         ))
         .add_systems(Startup,  setup_physics)
-        .add_plugins((RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0), RaycastPlugin, MouseZoomPlugin))
+        .add_plugins((RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0), RaycastPlugin, MouseZoomPlugin, MouseWorldPos))
         .add_systems(Update, move_cube)
         .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(WorldInspectorPlugin::new())
@@ -130,7 +140,7 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 
 
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn((Camera2dBundle::default(), MainCamera));
     /* Create the ground. */
     let ground = commands
         .spawn(RigidBody::Fixed)
@@ -152,9 +162,11 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
         .insert(Restitution::coefficient(0.7))
         
         .insert(GravityScale(10.0))
-        .insert(TransformBundle::from(Transform::from_xyz(100.0, 400.0, 0.0))).id();
+        .insert(TransformBundle::from(Transform::from_xyz(100.0, 400.0, 0.0)))
+        .id();
 
     commands.entity(ground).insert(ImpulseJoint::new(ball, joint));
+    
     
     
         
@@ -166,61 +178,21 @@ struct PlayerMarker;
 
 
 
-// fn control_zoom (
-    
-//     mut scroll_evr: EventReader<MouseWheel>,
-//     mut mouse_evr: EventReader<MouseMotion>,
-//     buttons: Res<Input<MouseButton>>,
-//     mut cameras: Query<(&mut OrthographicProjection, &mut Transform), With<Camera2d>>,
-
-
-// ) {
-//     for mut camera in cameras.iter_mut() {
-//         //print!("Camera Scale: {}", camera.scale);
-
-
-        
-
-//         if buttons.pressed(MouseButton::Left) {
-
-//             for ev in mouse_evr.iter() {
-                
-//                 camera.1.translation += Vec3::new(-ev.delta.x, ev.delta.y, 0.0) * camera.0.scale;
-//             }
-//         }
-
-        
-
-
-        
-//         for ev in scroll_evr.iter() {
-//         match ev.unit {
-//             MouseScrollUnit::Line => {
-//                 camera.0.scale -= ev.y / 10.0;
-//                 if camera.0.scale < 0.0 {camera.0.scale = 0.0}
-                
-//             }
-//             MouseScrollUnit::Pixel => {
-//                 //println!("Scroll (pixel units): vertical: {}, horizontal: {}", ev.y, ev.x);
-//             }
-//         }
-//     }
-//     }
-
-    
-// }
-
 fn move_cube(
 
 
     mut cubes: Query<&mut Transform, With<PlayerMarker>>,
+    mut commands: Commands,
     hasher: Res<HasherData>,
     time: Res<Time>,
     mut gizmos: Gizmos,
     mut verts: ResMut<VertsTest>
 ) {
+    commands.insert_resource(CubeQuery {
+        cube: *cubes.single()
+    });
     for mut cube in cubes.iter_mut() {
-
+        
         
         let translation = cube.translation.clone();
 
@@ -240,12 +212,12 @@ fn move_cube(
         verts.verts.push(point_down);
 
         //BAD!! dependent on framerate
-        if verts.verts.len() > 10000 {
+        if verts.verts.len() > 1000 {
             for i in 0..verts.verts.len() {
             
 
                 //remove the start of the cave, so that 
-                if i < verts.verts.len() - 10000 {
+                if i < verts.verts.len() - 1000 {
                     verts.verts.remove(i);
                     
                 }
