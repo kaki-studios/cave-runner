@@ -36,6 +36,7 @@ fn main() {
                 title: "cave-runner".into(),
                 resolution: (1600., 900.).into(),
                 present_mode: PresentMode::AutoVsync,
+
                 //vsync still on?
                 // Tells wasm to resize the window according to the available canvas
                 fit_canvas_to_parent: true,
