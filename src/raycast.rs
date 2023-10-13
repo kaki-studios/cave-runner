@@ -1,11 +1,13 @@
 use crate::mouseworldpos::MyWorldCoords;
-use crate::CubeQuery;
 use crate::MainCamera;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 pub struct RaycastPlugin;
 
-//TODO: Be able to cast ray towards mouse
+//TODO: Query all the joints and 1. disable / enable them on mouse click
+//                               2. set the anchor of the point to the entity clicked
+//                               and more specifically, to the correct place (in the local space of
+//                               the 2nd entity
 impl Plugin for RaycastPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, cast_ray);
@@ -21,8 +23,6 @@ fn cast_ray(
 
     mut q_camera: Query<&mut Transform, With<MainCamera>>,
     mut gizmos: Gizmos,
-
-    mut cube: Option<ResMut<CubeQuery>>,
     //mut commands: Commands
 ) {
     //somehow raycast doesn't work perfectly after changing camera position to follow player...
@@ -35,14 +35,6 @@ fn cast_ray(
     gizmos.circle_2d(mousepos.0, 5.0, Color::RED);
 
     if buttons.just_pressed(MouseButton::Left) {
-        if let Some(mut cubelol) = cube {
-            cubelol.cube.translation.x = mousepos.0.x;
-            cubelol.cube.translation.y = mousepos.0.y;
-            //NOT CHANGING! because we are caching cube in cubelol, so modifying cubelol won't
-            //change cube
-            println!("HELLO!!");
-        }
-
         let max_toi = 4_000_000.0;
         let solid = true;
         let filter = QueryFilter::default();

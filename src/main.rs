@@ -34,7 +34,7 @@ fn main() {
         .add_plugins((DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "cave-runner".into(),
-                resolution: (1000., 500.).into(),
+                resolution: (1600., 900.).into(),
                 present_mode: PresentMode::AutoVsync,
                 //vsync still on?
                 // Tells wasm to resize the window according to the available canvas
@@ -93,7 +93,7 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     let joint = RopeJointBuilder::new()
         .local_anchor1(Vec2::new(0.0, 0.0))
-        .limits([0.5, 1000.0])
+        .limits([0.5, 500.0])
         .local_anchor2(Vec2::new(0.0, 0.0));
     println!("ground id at start {}", ground.index());
 
