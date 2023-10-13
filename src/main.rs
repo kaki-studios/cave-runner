@@ -104,7 +104,7 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
         .insert(Restitution::coefficient(0.7))
         .insert(GravityScale(10.0))
         .insert(TransformBundle::from(Transform::from_xyz(
-            600.0, 400.0, 0.0,
+            800.0, 400.0, 0.0,
         )))
         .id();
 

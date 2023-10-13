@@ -22,8 +22,9 @@ fn cast_ray(
     mousepos: Res<MyWorldCoords>,
 
     mut q_camera: Query<&mut Transform, With<MainCamera>>,
+    mut joints: Query<Entity, With<ImpulseJoint>>,
     mut gizmos: Gizmos,
-    //mut commands: Commands
+    mut commands: Commands,
 ) {
     //somehow raycast doesn't work perfectly after changing camera position to follow player...
     let ray_pos = Vec2::new(
@@ -42,6 +43,11 @@ fn cast_ray(
         if let Some((entity, _toi)) =
             rapier_context.cast_ray(ray_pos, ray_dir, max_toi, solid, filter)
         {
+            for target in joints.iter_mut() {
+                if target == entity {
+                    commands.entity(entity).remove::<ImpulseJoint>();
+                }
+            }
             // The first collider hit has the entity `entity` and it hit after
             // the ray travelled a distance (vector) equal to `ray_dir * toi`.
             //let hit_point = ray_pos + ray_dir * toi;
