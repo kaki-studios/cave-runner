@@ -1,5 +1,5 @@
 use crate::mouseworldpos::MyWorldCoords;
-use crate::MainCamera;
+use crate::{GroundMarker, MainCamera, PlayerMarker};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 pub struct RaycastPlugin;
@@ -24,12 +24,21 @@ fn cast_ray(
     mut q_camera: Query<&mut Transform, With<MainCamera>>,
     mut joints: Query<Entity, With<ImpulseJoint>>,
     mut gizmos: Gizmos,
+    ball_query: Query<&Transform, (With<PlayerMarker>, Without<MainCamera>)>,
     mut commands: Commands,
+    ground_query: Query<
+        Entity,
+        (
+            With<GroundMarker>,
+            Without<MainCamera>,
+            Without<PlayerMarker>,
+        ),
+    >,
 ) {
     //somehow raycast doesn't work perfectly after changing camera position to follow player...
     let ray_pos = Vec2::new(
-        q_camera.single().translation.x,
-        q_camera.single().translation.y,
+        ball_query.single().translation.x,
+        ball_query.single().translation.y,
     );
     let ray_dir = mousepos.0;
     gizmos.line_2d(ray_pos, ray_dir, Color::LIME_GREEN);
@@ -43,11 +52,11 @@ fn cast_ray(
         if let Some((entity, _toi)) =
             rapier_context.cast_ray(ray_pos, ray_dir, max_toi, solid, filter)
         {
-            for target in joints.iter_mut() {
-                if target == entity {
-                    commands.entity(entity).remove::<ImpulseJoint>();
-                }
+            //TODO: this doesn't work!!
+            if entity == ground_query.single() {
+                commands.entity(entity).remove::<ImpulseJoint>();
             }
+
             // The first collider hit has the entity `entity` and it hit after
             // the ray travelled a distance (vector) equal to `ray_dir * toi`.
             //let hit_point = ray_pos + ray_dir * toi;

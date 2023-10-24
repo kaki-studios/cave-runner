@@ -62,6 +62,9 @@ fn main() {
         .run();
 }
 
+#[derive(Component)]
+struct GroundMarker;
+
 fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
     let mut rng = rand::thread_rng();
 
@@ -76,7 +79,7 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
             texture: asset_server.load("square.png"),
             ..default()
         })
-        .insert(PlayerMarker);
+        .insert(CubeMarker);
 
     let hasher = PermutationTable::new(rng.gen_range(0..9999));
 
@@ -90,6 +93,7 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
         .spawn(RigidBody::Fixed)
         .insert(Collider::cuboid(500.0, 50.0))
         .insert(TransformBundle::from(Transform::from_xyz(0.0, -100.0, 0.0)))
+        .insert(GroundMarker)
         .id();
 
     let joint = RopeJointBuilder::new()
@@ -105,8 +109,9 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
         .insert(Restitution::coefficient(0.7))
         .insert(GravityScale(10.0))
         .insert(TransformBundle::from(Transform::from_xyz(
-            800.0, 400.0, 0.0,
+            800.0, 800.0, 0.0,
         )))
+        .insert(PlayerMarker)
         .id();
 
     commands
@@ -115,10 +120,13 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
 }
 
 #[derive(Component)]
+struct CubeMarker;
+
+#[derive(Component)]
 struct PlayerMarker;
 
 fn move_cube(
-    mut cubes: Query<&mut Transform, With<PlayerMarker>>,
+    mut cubes: Query<&mut Transform, With<CubeMarker>>,
     mut commands: Commands,
     hasher: Res<HasherData>,
     time: Res<Time>,
