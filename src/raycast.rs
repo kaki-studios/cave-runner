@@ -24,7 +24,7 @@ fn cast_ray(
     mut q_camera: Query<&mut Transform, With<MainCamera>>,
     mut joints: Query<Entity, With<ImpulseJoint>>,
     mut gizmos: Gizmos,
-    ball_query: Query<&Transform, (With<PlayerMarker>, Without<MainCamera>)>,
+    ball_query: Query<(&Transform, Entity), (With<PlayerMarker>, Without<MainCamera>)>,
     mut commands: Commands,
     ground_query: Query<
         Entity,
@@ -37,17 +37,18 @@ fn cast_ray(
 ) {
     //somehow raycast doesn't work perfectly after changing camera position to follow player...
     let ray_pos = Vec2::new(
-        ball_query.single().translation.x,
-        ball_query.single().translation.y,
+        ball_query.single().0.translation.x,
+        ball_query.single().0.translation.y,
     );
     let ray_dir = mousepos.0;
     gizmos.line_2d(ray_pos, ray_dir, Color::LIME_GREEN);
     gizmos.circle_2d(mousepos.0, 5.0, Color::RED);
 
     if buttons.just_pressed(MouseButton::Left) {
+        let filter: QueryFilter = QueryFilter::new();
+        filter.exclude_rigid_body(ball_query.single().1);
         let max_toi = 4_000_000.0;
         let solid = true;
-        let filter = QueryFilter::default();
 
         if let Some((entity, _toi)) =
             rapier_context.cast_ray(ray_pos, ray_dir, max_toi, solid, filter)
