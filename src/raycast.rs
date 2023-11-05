@@ -27,7 +27,7 @@ fn cast_ray(
     ball_query: Query<(&Transform, Entity), (With<PlayerMarker>, Without<MainCamera>)>,
     mut commands: Commands,
     ground_query: Query<
-        Entity,
+        (Entity, Option<&mut ImpulseJoint>),
         (
             With<GroundMarker>,
             Without<MainCamera>,
@@ -45,25 +45,38 @@ fn cast_ray(
     gizmos.circle_2d(mousepos.0, 5.0, Color::RED);
 
     if buttons.just_pressed(MouseButton::Left) {
-        let filter: QueryFilter = QueryFilter::new();
-        filter.exclude_rigid_body(ball_query.single().1);
+        let filter: QueryFilter = QueryFilter::only_fixed();
+        // filter.exclude_collider(ball_query.single().1);
+
         let max_toi = 4_000_000.0;
-        let solid = true;
+        let solid = false;
 
         if let Some((entity, _toi)) =
             rapier_context.cast_ray(ray_pos, ray_dir, max_toi, solid, filter)
         {
-            //TODO: this doesn't work!!
-            if entity == ground_query.single() {
-                commands.entity(entity).remove::<ImpulseJoint>();
-            }
+            if entity == ground_query.single().0 {
+                if let Some(_ground) = ground_query.single().1 {
+                    commands.entity(entity).remove::<ImpulseJoint>();
+                } else {
+                    let hit_point = ray_pos + ray_dir * _toi;
+                    let joint = RopeJointBuilder::new()
+                        .local_anchor1(Vec2::ZERO)
+                        .limits([0.5, 500.0])
+                        .local_anchor2(Vec2::ZERO);
 
+                    commands
+                        .entity(entity)
+                        .insert(ImpulseJoint::new(ball_query.single().1, joint));
+                }
+            }
+            println!(
+                "entity == ground query: {}",
+                entity == ground_query.single().0
+            );
             // The first collider hit has the entity `entity` and it hit after
             // the ray travelled a distance (vector) equal to `ray_dir * toi`.
-            //let hit_point = ray_pos + ray_dir * toi;
-            //println!("Entity {:?} hit at point {}", entity, hit_point);
 
-            println!("raycast id {}", entity.index())
+            //println!("raycast id {}", entity.index())
         }
     }
 }

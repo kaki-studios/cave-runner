@@ -103,7 +103,7 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
     println!("ground id at start {}", ground.index());
 
     /* Create the bouncing ball. */
-    let ball: Entity = commands
+    let ball = commands
         .spawn(RigidBody::Dynamic)
         .insert(Collider::ball(50.0))
         .insert(Restitution::coefficient(0.7))
@@ -116,7 +116,7 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     commands
         .entity(ground)
-        .insert(ImpulseJoint::new(ball, joint.build()));
+        .insert(ImpulseJoint::new(ball, joint));
 }
 
 #[derive(Component)]
