@@ -1,5 +1,6 @@
 use crate::mouseworldpos::MyWorldCoords;
 use crate::{GroundMarker, MainCamera, PlayerMarker};
+use bevy::input::mouse::MouseButtonInput;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 pub struct RaycastPlugin;
@@ -27,13 +28,14 @@ fn cast_ray(
     ball_query: Query<(&Transform, Entity), (With<PlayerMarker>, Without<MainCamera>)>,
     mut commands: Commands,
     ground_query: Query<
-        (Entity, Option<&mut ImpulseJoint>),
+        (Entity, Option<&mut ImpulseJoint>, &Transform),
         (
             With<GroundMarker>,
             Without<MainCamera>,
             Without<PlayerMarker>,
         ),
     >,
+    mut mousebtn_evr: EventReader<MouseButtonInput>,
 ) {
     //somehow raycast doesn't work perfectly after changing camera position to follow player...
     let ray_pos = Vec2::new(
@@ -43,6 +45,60 @@ fn cast_ray(
     let ray_dir = mousepos.0;
     gizmos.line_2d(ray_pos, ray_dir, Color::LIME_GREEN);
     gizmos.circle_2d(mousepos.0, 5.0, Color::RED);
+
+    use bevy::input::ButtonState;
+
+    for ev in mousebtn_evr.iter() {
+        match ev.state {
+            ButtonState::Pressed => {
+                let filter: QueryFilter = QueryFilter::only_fixed();
+                // filter.exclude_collider(ball_query.single().1);
+
+                let max_toi = 4_000_000.0;
+                let solid = false;
+
+                if let Some((entity, _toi)) =
+                    rapier_context.cast_ray(ray_pos, ray_dir, max_toi, solid, filter)
+                {
+                    if entity == ground_query.single().0 {
+                        let hit_point = ray_pos + ray_dir * _toi;
+                        let joint = RopeJointBuilder::new()
+                            .local_anchor1(
+                                -hit_point
+                                    + Vec2::new(
+                                        ground_query.single().2.translation.x,
+                                        ground_query.single().2.translation.y,
+                                    ),
+                            )
+                            .limits([0.5, 500.0])
+                            .local_anchor2(Vec2::ZERO);
+
+                        commands
+                            .entity(entity)
+                            .insert(ImpulseJoint::new(ball_query.single().1, joint));
+                    }
+                    println!(
+                        "entity == ground query: {}",
+                        entity == ground_query.single().0
+                    );
+                    // The first collider hit has the entity `entity` and it hit after
+                    // the ray travelled a distance (vector) equal to `ray_dir * toi`.
+                    //println!("raycast id {}", entity.index())
+                }
+            }
+            ButtonState::Released => {
+                commands
+                    .entity(ground_query.single().0)
+                    .remove::<ImpulseJoint>();
+
+                println!(
+                    "MousePos: {}, BallPos {:?}",
+                    mousepos.0,
+                    ball_query.single().0.translation
+                )
+            }
+        }
+    }
 
     if buttons.just_pressed(MouseButton::Left) {
         let filter: QueryFilter = QueryFilter::only_fixed();
@@ -60,9 +116,15 @@ fn cast_ray(
                 } else {
                     let hit_point = ray_pos + ray_dir * _toi;
                     let joint = RopeJointBuilder::new()
-                        .local_anchor1(Vec2::ZERO)
+                        .local_anchor2(
+                            hit_point
+                                + Vec2::new(
+                                    ground_query.single().2.translation.x,
+                                    ground_query.single().2.translation.y,
+                                ),
+                        )
                         .limits([0.5, 500.0])
-                        .local_anchor2(Vec2::ZERO);
+                        .local_anchor1(Vec2::ZERO);
 
                     commands
                         .entity(entity)
