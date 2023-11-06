@@ -36,11 +36,12 @@ fn cast_ray(
         ),
     >,
     mut mousebtn_evr: EventReader<MouseButtonInput>,
+    asset_server: Res<AssetServer>,
 ) {
     //somehow raycast doesn't work perfectly after changing camera position to follow player...
     let ray_pos = Vec2::new(
         ball_query.single().0.translation.x,
-        ball_query.single().0.translation.y,
+        ball_query.single().0.translation.y + 50.5,
     );
     let ray_dir = mousepos.0;
     gizmos.line_2d(ray_pos, ray_dir, Color::LIME_GREEN);
@@ -51,7 +52,7 @@ fn cast_ray(
     for ev in mousebtn_evr.iter() {
         match ev.state {
             ButtonState::Pressed => {
-                let filter: QueryFilter = QueryFilter::only_fixed();
+                let filter: QueryFilter = QueryFilter::new();
                 // filter.exclude_collider(ball_query.single().1);
 
                 let max_toi = 4_000_000.0;
@@ -62,16 +63,41 @@ fn cast_ray(
                 {
                     if entity == ground_query.single().0 {
                         let hit_point = ray_pos + ray_dir * _toi;
+
+                        // commands.spawn(SpriteBundle {
+                        //     sprite: Sprite {
+                        //         color: Color::rgb(0.25, 0.25, 0.75),
+                        //         custom_size: Some(Vec2::new(10.0, 10.0)),
+                        //         ..default()
+                        //     },
+                        //     transform: Transform::from_translation(Vec3::new(
+                        //         hit_point.x,
+                        //         hit_point.y,
+                        //         0.0,
+                        //     )),
+                        //     texture: asset_server.load("square.png"),
+                        //     ..default()
+                        // });
+
                         let joint = RopeJointBuilder::new()
-                            .local_anchor1(
-                                -hit_point
-                                    + Vec2::new(
-                                        ground_query.single().2.translation.x,
-                                        ground_query.single().2.translation.y,
-                                    ),
+                            .local_anchor2(
+                                // ground_query
+                                //     .single()
+                                //     .2
+                                //     .transform_point(Vec3::new(-hit_point.x, hit_point.y, 0.))
+                                //     .truncate(),
+                                Vec2::ZERO,
                             )
-                            .limits([0.5, 500.0])
-                            .local_anchor2(Vec2::ZERO);
+                            .limits([
+                                0.5,
+                                ground_query
+                                    .single()
+                                    .2
+                                    .translation
+                                    .distance(ball_query.single().0.translation),
+                                // 500.0,
+                            ])
+                            .local_anchor1(ray_pos - ball_query.single().0.translation.truncate());
 
                         commands
                             .entity(entity)
@@ -81,9 +107,6 @@ fn cast_ray(
                         "entity == ground query: {}",
                         entity == ground_query.single().0
                     );
-                    // The first collider hit has the entity `entity` and it hit after
-                    // the ray travelled a distance (vector) equal to `ray_dir * toi`.
-                    //println!("raycast id {}", entity.index())
                 }
             }
             ButtonState::Released => {
@@ -97,48 +120,6 @@ fn cast_ray(
                     ball_query.single().0.translation
                 )
             }
-        }
-    }
-
-    if buttons.just_pressed(MouseButton::Left) {
-        let filter: QueryFilter = QueryFilter::only_fixed();
-        // filter.exclude_collider(ball_query.single().1);
-
-        let max_toi = 4_000_000.0;
-        let solid = false;
-
-        if let Some((entity, _toi)) =
-            rapier_context.cast_ray(ray_pos, ray_dir, max_toi, solid, filter)
-        {
-            if entity == ground_query.single().0 {
-                if let Some(_ground) = ground_query.single().1 {
-                    commands.entity(entity).remove::<ImpulseJoint>();
-                } else {
-                    let hit_point = ray_pos + ray_dir * _toi;
-                    let joint = RopeJointBuilder::new()
-                        .local_anchor2(
-                            hit_point
-                                + Vec2::new(
-                                    ground_query.single().2.translation.x,
-                                    ground_query.single().2.translation.y,
-                                ),
-                        )
-                        .limits([0.5, 500.0])
-                        .local_anchor1(Vec2::ZERO);
-
-                    commands
-                        .entity(entity)
-                        .insert(ImpulseJoint::new(ball_query.single().1, joint));
-                }
-            }
-            println!(
-                "entity == ground query: {}",
-                entity == ground_query.single().0
-            );
-            // The first collider hit has the entity `entity` and it hit after
-            // the ray travelled a distance (vector) equal to `ray_dir * toi`.
-
-            //println!("raycast id {}", entity.index())
         }
     }
 }

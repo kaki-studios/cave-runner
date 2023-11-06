@@ -96,11 +96,11 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
         .insert(GroundMarker)
         .id();
 
-    let joint = RopeJointBuilder::new()
-        .local_anchor1(Vec2::new(0.0, 0.0))
-        .limits([0.5, 500.0])
-        .local_anchor2(Vec2::new(0.0, 0.0));
-    println!("ground id at start {}", ground.index());
+    // let joint = RopeJointBuilder::new()
+    //     .local_anchor1(Vec2::new(0.0, 0.0))
+    //     .limits([0.5, 500.0])
+    //     .local_anchor2(Vec2::new(0.0, 0.0));
+    // println!("ground id at start {}", ground.index());
 
     /* Create the bouncing ball. */
     let ball = commands
@@ -109,14 +109,15 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
         .insert(Restitution::coefficient(0.7))
         .insert(GravityScale(10.0))
         .insert(TransformBundle::from(Transform::from_xyz(
-            800.0, 800.0, 0.0,
+            1000.0, 800.0, 0.0,
         )))
         .insert(PlayerMarker)
+        // .insert(LockedAxes::ROTATION_LOCKED_Z)
         .id();
 
-    commands
-        .entity(ground)
-        .insert(ImpulseJoint::new(ball, joint));
+    // commands
+    //     .entity(ground)
+    //     .insert(ImpulseJoint::new(ball, joint));
 }
 
 #[derive(Component)]
