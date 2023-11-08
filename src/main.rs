@@ -110,7 +110,7 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
             1000.0, 800.0, 0.0,
         )))
         .insert(PlayerMarker)
-        // .insert(LockedAxes::ROTATION_LOCKED_Z)
+        .insert(LockedAxes::ROTATION_LOCKED_Z)
         .id();
 
     // commands

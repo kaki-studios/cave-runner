@@ -47,17 +47,42 @@ fn cast_ray(
     for ev in mousebtn_evr.iter() {
         match ev.state {
             ButtonState::Pressed => {
-                let filter: QueryFilter = QueryFilter::only_fixed();
-                // filter.exclude_collider(ball_query.single().1);
+                // let filter: QueryFilter = QueryFilter::only_fixed();
+                //
+                // let max_toi = 4_000_000.0;
+                // let solid = true;
+                //
+                // if let Some((entity, _toi)) =
+                //     rapier_context.cast_ray(ray_pos, ray_dir, max_toi, solid, filter)
+                // {
+                //     // if entity == ground_query.single().0 {
+                //     // let hit_point = ray_pos + ray_dir * _toi;
+                //
+                //     let joint = RopeJointBuilder::new()
+                //         .local_anchor2(
+                //             mousepos.0 - ground_query.single().2.translation.truncate(), // Vec2::ZERO,
+                //         )
+                //         .limits([
+                //             0.5,
+                //             ground_query
+                //                 .single()
+                //                 .2
+                //                 .translation
+                //                 .distance(ball_query.single().0.translation),
+                //             // 500.0,
+                //         ])
+                //         .local_anchor1(ray_pos - ball_query.single().0.translation.truncate());
+                //
+                //     commands
+                //         .entity(entity)
+                //         .insert(ImpulseJoint::new(ball_query.single().1, joint));
+                //     // }
+                // }
+                let point = mousepos.0;
+                let filter = QueryFilter::only_fixed();
 
-                let max_toi = 4_000_000.0;
-                let solid = false;
-
-                if let Some((entity, _toi)) =
-                    rapier_context.cast_ray(ray_pos, ray_dir, max_toi, solid, filter)
-                {
-                    // if entity == ground_query.single().0 {
-                    // let hit_point = ray_pos + ray_dir * _toi;
+                rapier_context.intersections_with_point(point, filter, |entity| {
+                    // Callback called on each collider with a shape containing the point.
 
                     let joint = RopeJointBuilder::new()
                         .local_anchor2(
@@ -77,8 +102,11 @@ fn cast_ray(
                     commands
                         .entity(entity)
                         .insert(ImpulseJoint::new(ball_query.single().1, joint));
-                    // }
-                }
+
+                    println!("The entity {:?} contains the point.", entity);
+                    // Return `false` instead if we want to stop searching for other colliders containing this point.
+                    true
+                });
             }
             ButtonState::Released => {
                 commands
