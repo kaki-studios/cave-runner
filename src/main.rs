@@ -1,4 +1,4 @@
-use bevy::{prelude::*, window::PresentMode};
+use bevy::{prelude::*, window::*};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier2d::prelude::*;
 use noise::core::open_simplex::*;
@@ -20,9 +20,7 @@ struct VertsTest {
 }
 
 #[derive(Resource)]
-struct CubeQuery {
-    cube: Transform,
-}
+struct CubeQuery;
 
 #[derive(Resource)]
 struct HasherData {
@@ -36,14 +34,14 @@ fn main() {
                 title: "cave-runner".into(),
                 resolution: (1600., 900.).into(),
                 present_mode: PresentMode::AutoVsync,
-
-                //vsync still on?
                 // Tells wasm to resize the window according to the available canvas
                 fit_canvas_to_parent: true,
                 // Tells wasm not to override default event handling, like F5, Ctrl+R etc.
                 prevent_default_event_handling: false,
-
-                // This will spawn an invisible window The window will be made visible in the make_visible() system after 3 frames. This is useful when you want to avoid the white window that shows up before the GPU is ready to render the app. transparent: false,
+                window_theme: Some(WindowTheme::Dark),
+                // This will spawn an invisible window
+                // The window will be made visible in the make_visible() system after 3 frames.
+                // This is useful when you want to avoid the white window that shows up before the GPU is ready to render the app.
                 ..default()
             }),
             ..default()
@@ -89,7 +87,7 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     commands.spawn((Camera2dBundle::default(), MainCamera));
     /* Create the ground. */
-    let ground = commands
+    let _ground = commands
         .spawn(RigidBody::Fixed)
         .insert(Collider::cuboid(500.0, 50.0))
         .insert(TransformBundle::from(Transform::from_xyz(0.0, -100.0, 0.0)))
@@ -103,7 +101,7 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
     // println!("ground id at start {}", ground.index());
 
     /* Create the bouncing ball. */
-    let ball = commands
+    let _ball = commands
         .spawn(RigidBody::Dynamic)
         .insert(Collider::ball(50.0))
         .insert(Restitution::coefficient(0.7))
@@ -134,9 +132,6 @@ fn move_cube(
     mut gizmos: Gizmos,
     mut verts: ResMut<VertsTest>,
 ) {
-    commands.insert_resource(CubeQuery {
-        cube: *cubes.single(),
-    });
     for mut cube in cubes.iter_mut() {
         let translation = cube.translation.clone();
 

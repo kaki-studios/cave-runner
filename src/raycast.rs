@@ -1,6 +1,7 @@
 use crate::mouseworldpos::MyWorldCoords;
 use crate::{GroundMarker, MainCamera, PlayerMarker};
 use bevy::input::mouse::MouseButtonInput;
+use bevy::input::ButtonState;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 pub struct RaycastPlugin;
@@ -18,12 +19,9 @@ impl Plugin for RaycastPlugin {
 fn cast_ray(
     rapier_context: Res<RapierContext>,
 
-    buttons: Res<Input<MouseButton>>,
-
     mousepos: Res<MyWorldCoords>,
 
-    mut q_camera: Query<&mut Transform, With<MainCamera>>,
-    mut joints: Query<Entity, With<ImpulseJoint>>,
+    // mut q_camera: Query<&mut Transform, With<MainCamera>>,
     mut gizmos: Gizmos,
     ball_query: Query<(&Transform, Entity), (With<PlayerMarker>, Without<MainCamera>)>,
     mut commands: Commands,
@@ -36,7 +34,6 @@ fn cast_ray(
         ),
     >,
     mut mousebtn_evr: EventReader<MouseButtonInput>,
-    asset_server: Res<AssetServer>,
 ) {
     //somehow raycast doesn't work perfectly after changing camera position to follow player...
     let ray_pos = Vec2::new(
@@ -47,12 +44,10 @@ fn cast_ray(
     gizmos.line_2d(ray_pos, ray_dir, Color::LIME_GREEN);
     gizmos.circle_2d(mousepos.0, 5.0, Color::RED);
 
-    use bevy::input::ButtonState;
-
     for ev in mousebtn_evr.iter() {
         match ev.state {
             ButtonState::Pressed => {
-                let filter: QueryFilter = QueryFilter::new();
+                let filter: QueryFilter = QueryFilter::only_fixed();
                 // filter.exclude_collider(ball_query.single().1);
 
                 let max_toi = 4_000_000.0;
@@ -61,64 +56,34 @@ fn cast_ray(
                 if let Some((entity, _toi)) =
                     rapier_context.cast_ray(ray_pos, ray_dir, max_toi, solid, filter)
                 {
-                    if entity == ground_query.single().0 {
-                        let hit_point = ray_pos + ray_dir * _toi;
+                    // if entity == ground_query.single().0 {
+                    // let hit_point = ray_pos + ray_dir * _toi;
 
-                        // commands.spawn(SpriteBundle {
-                        //     sprite: Sprite {
-                        //         color: Color::rgb(0.25, 0.25, 0.75),
-                        //         custom_size: Some(Vec2::new(10.0, 10.0)),
-                        //         ..default()
-                        //     },
-                        //     transform: Transform::from_translation(Vec3::new(
-                        //         hit_point.x,
-                        //         hit_point.y,
-                        //         0.0,
-                        //     )),
-                        //     texture: asset_server.load("square.png"),
-                        //     ..default()
-                        // });
+                    let joint = RopeJointBuilder::new()
+                        .local_anchor2(
+                            mousepos.0 - ground_query.single().2.translation.truncate(), // Vec2::ZERO,
+                        )
+                        .limits([
+                            0.5,
+                            ground_query
+                                .single()
+                                .2
+                                .translation
+                                .distance(ball_query.single().0.translation),
+                            // 500.0,
+                        ])
+                        .local_anchor1(ray_pos - ball_query.single().0.translation.truncate());
 
-                        let joint = RopeJointBuilder::new()
-                            .local_anchor2(
-                                // ground_query
-                                //     .single()
-                                //     .2
-                                //     .transform_point(Vec3::new(-hit_point.x, hit_point.y, 0.))
-                                //     .truncate(),
-                                Vec2::ZERO,
-                            )
-                            .limits([
-                                0.5,
-                                ground_query
-                                    .single()
-                                    .2
-                                    .translation
-                                    .distance(ball_query.single().0.translation),
-                                // 500.0,
-                            ])
-                            .local_anchor1(ray_pos - ball_query.single().0.translation.truncate());
-
-                        commands
-                            .entity(entity)
-                            .insert(ImpulseJoint::new(ball_query.single().1, joint));
-                    }
-                    println!(
-                        "entity == ground query: {}",
-                        entity == ground_query.single().0
-                    );
+                    commands
+                        .entity(entity)
+                        .insert(ImpulseJoint::new(ball_query.single().1, joint));
+                    // }
                 }
             }
             ButtonState::Released => {
                 commands
                     .entity(ground_query.single().0)
                     .remove::<ImpulseJoint>();
-
-                println!(
-                    "MousePos: {}, BallPos {:?}",
-                    mousepos.0,
-                    ball_query.single().0.translation
-                )
             }
         }
     }
