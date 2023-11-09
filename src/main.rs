@@ -81,7 +81,7 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     let hasher = PermutationTable::new(rng.gen_range(0..9999));
 
-    commands.insert_resource(HasherData { hasher: hasher });
+    commands.insert_resource(HasherData { hasher });
 
     commands.insert_resource(VertsTest { verts: vec![] });
 
@@ -94,12 +94,6 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
         .insert(GroundMarker)
         .id();
 
-    // let joint = RopeJointBuilder::new()
-    //     .local_anchor1(Vec2::new(0.0, 0.0))
-    //     .limits([0.5, 500.0])
-    //     .local_anchor2(Vec2::new(0.0, 0.0));
-    // println!("ground id at start {}", ground.index());
-
     /* Create the bouncing ball. */
     let _ball = commands
         .spawn(RigidBody::Dynamic)
@@ -110,12 +104,8 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
             1000.0, 800.0, 0.0,
         )))
         .insert(PlayerMarker)
-        .insert(LockedAxes::ROTATION_LOCKED_Z)
+        // .insert(LockedAxes::ROTATION_LOCKED_Z)
         .id();
-
-    // commands
-    //     .entity(ground)
-    //     .insert(ImpulseJoint::new(ball, joint));
 }
 
 #[derive(Component)]
@@ -126,7 +116,6 @@ struct PlayerMarker;
 
 fn move_cube(
     mut cubes: Query<&mut Transform, With<CubeMarker>>,
-    mut commands: Commands,
     hasher: Res<HasherData>,
     time: Res<Time>,
     mut gizmos: Gizmos,
