@@ -18,11 +18,11 @@ fn control_zoom(
     for mut camera in cameras.iter_mut() {
         //print!("Camera Scale: {}", camera.scale);
 
-        // if buttons.pressed(MouseButton::Left) {
-        //     for ev in mouse_evr.read() {
-        //         camera.1.translation += Vec3::new(-ev.delta.x, ev.delta.y, 0.0) * camera.0.scale;
-        //     }
-        // }
+        if buttons.pressed(MouseButton::Left) {
+            for ev in mouse_evr.read() {
+                camera.1.translation += Vec3::new(-ev.delta.x, ev.delta.y, 0.0) * camera.0.scale;
+            }
+        }
 
         for ev in scroll_evr.read() {
             match ev.unit {

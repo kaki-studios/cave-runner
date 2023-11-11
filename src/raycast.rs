@@ -35,9 +35,9 @@ fn grapple_hook(
     mut mousebtn_evr: EventReader<MouseButtonInput>,
     mut ext_forces: Query<&mut ExternalForce>,
 ) {
-    for mut camera in &mut q_camera {
-        camera.translation = ball_query.single().0.translation;
-    }
+    // for mut camera in &mut q_camera {
+    //     camera.translation = ball_query.single().0.translation;
+    // }
 
     //somehow raycast doesn't work perfectly after changing camera position to follow player...
     let ray_dir = mousepos.0;
@@ -84,10 +84,12 @@ fn grapple_hook(
 
                         //we add a force
                         let mut velocity_vec = Vec2::ZERO;
+
                         for (_, _, rb_vels, _) in &mut ball_query {
                             velocity_vec = rb_vels.linvel;
                         }
-                        *ball_query.single_mut().3 = GravityScale(0.05);
+                        //GravityScale to 0 for better mechanics
+                        *ball_query.single_mut().3 = GravityScale(0.0);
 
                         for mut ext_force in ext_forces.iter_mut() {
                             ext_force.force = velocity_vec * 1000.0;

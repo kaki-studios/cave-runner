@@ -151,31 +151,45 @@ fn move_cube(
             Color::LIME_GREEN,
         );
 
-        let point_up: Vec2 = Vec2::new(-movement_direction.y, movement_direction.x) * 50.0
-            + Vec2::new(cube.translation.x, cube.translation.y);
-        let point_down: Vec2 = Vec2::new(movement_direction.y, -movement_direction.x) * 50.0
-            + Vec2::new(cube.translation.x, cube.translation.y);
+        let point_high: Vec2 = Vec2::new(-movement_direction.y, movement_direction.x) * 50.0
+            + cube.translation.truncate();
+        let point_low: Vec2 = Vec2::new(movement_direction.y, -movement_direction.x) * 50.0
+            + cube.translation.truncate();
+        let point_higher = Vec2::new(-movement_direction.y, movement_direction.x) * 100.0
+            + cube.translation.truncate();
+        let point_lower: Vec2 = Vec2::new(movement_direction.y, -movement_direction.x) * 100.0
+            + cube.translation.truncate();
 
-        verts.verts.push(point_up);
-        verts.verts.push(point_down);
+        verts.verts.push(point_high);
+        verts.verts.push(point_low);
+
+        verts.verts.push(point_higher);
+        verts.verts.push(point_lower);
 
         //TODO: BAD!! dependent on framerate
-        if verts.verts.len() > 1000 {
-            for i in 0..verts.verts.len() - 1000 {
-                //remove the start of the cave, so that the cave doesn't get too long
-                verts.verts.remove(i);
-            }
-        }
+        // if verts.verts.len() > 1000 {
+        //     for i in 0..verts.verts.len() - 1000 {
+        //         //remove the start of the cave, so that the cave doesn't get too long
+        //         verts.verts.remove(i);
+        //     }
+        // }
 
         //we draw a line between each vertex!
         for (i, value) in verts.verts.iter().enumerate() {
-            if i == 1 {
-                gizmos.line_2d(*value, verts.verts[0], Color::GREEN);
-            }
-            if i < verts.verts.len() - 2 {
-                gizmos.line_2d(*value, verts.verts[i + 2], Color::GREEN)
-            } else if i == verts.verts.len() - 2 {
-                gizmos.line_2d(*value, verts.verts[i + 1], Color::GREEN);
+            //0 or 1
+
+            if i % 4 < 2 {
+                if i + 6 < verts.verts.len() {
+                    //first triangle
+                    gizmos.line_2d(*value, verts.verts[i + 6], Color::GREEN);
+                    gizmos.line_2d(verts.verts[i + 6], verts.verts[i + 2], Color::GREEN);
+                    gizmos.line_2d(*value, verts.verts[i + 2], Color::GREEN);
+                    //second triangle
+                    gizmos.line_2d(*value, verts.verts[i + 4], Color::GREEN);
+                    gizmos.line_2d(verts.verts[i + 4], verts.verts[i + 6], Color::GREEN);
+                    //we dont't need to draw the first line again!
+                    // gizmos.line_2d(*value, verts.verts[i + 6], Color::GREEN);
+                }
             }
         }
 
