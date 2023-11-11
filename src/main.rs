@@ -89,7 +89,7 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
     /* Create the ground. */
     let _ground = commands
         .spawn(RigidBody::Fixed)
-        .insert(Collider::cuboid(500.0, 50.0))
+        .insert(Collider::cuboid(500.0, 30.0))
         .insert(TransformBundle::from(Transform::from_xyz(0.0, -100.0, 0.0)))
         .insert(GroundMarker)
         .id();
@@ -97,12 +97,17 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
     /* Create the bouncing ball. */
     let _ball = commands
         .spawn(RigidBody::Dynamic)
-        .insert(Collider::ball(50.0))
+        .insert(Collider::ball(30.0))
         .insert(Restitution::coefficient(0.7))
-        .insert(GravityScale(10.0))
+        .insert(GravityScale(1.0))
         .insert(TransformBundle::from(Transform::from_xyz(
             1000.0, 800.0, 0.0,
         )))
+        .insert(Velocity::zero())
+        .insert(ExternalForce {
+            force: Vec2::ZERO,
+            torque: 0.0,
+        })
         .insert(PlayerMarker)
         // .insert(LockedAxes::ROTATION_LOCKED_Z)
         .id();
@@ -122,7 +127,7 @@ fn move_cube(
     mut verts: ResMut<VertsTest>,
 ) {
     for mut cube in cubes.iter_mut() {
-        let translation = cube.translation.clone();
+        let translation = cube.translation;
 
         let movement_direction = cube.rotation * Vec3::X;
 
@@ -154,18 +159,24 @@ fn move_cube(
         verts.verts.push(point_up);
         verts.verts.push(point_down);
 
-        //BAD!! dependent on framerate
+        //TODO: BAD!! dependent on framerate
         if verts.verts.len() > 1000 {
-            for i in 0..verts.verts.len() {
-                //remove the start of the cave, so that
-                if i < verts.verts.len() - 1000 {
-                    verts.verts.remove(i);
-                }
+            for i in 0..verts.verts.len() - 1000 {
+                //remove the start of the cave, so that the cave doesn't get too long
+                verts.verts.remove(i);
             }
         }
 
-        for i in verts.verts.iter() {
-            gizmos.line_2d(Vec2::new(i.x - 0.5, i.y - 0.5), *i, Color::LIME_GREEN);
+        //we draw a line between each vertex!
+        for (i, value) in verts.verts.iter().enumerate() {
+            if i == 1 {
+                gizmos.line_2d(*value, verts.verts[0], Color::GREEN);
+            }
+            if i < verts.verts.len() - 2 {
+                gizmos.line_2d(*value, verts.verts[i + 2], Color::GREEN)
+            } else if i == verts.verts.len() - 2 {
+                gizmos.line_2d(*value, verts.verts[i + 1], Color::GREEN);
+            }
         }
 
         //simple verts working!
