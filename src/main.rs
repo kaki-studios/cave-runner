@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use bevy::{prelude::*, window::*};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier2d::prelude::*;
@@ -39,6 +41,9 @@ struct HasherData {
     hasher: PermutationTable,
 }
 
+#[derive(Resource)]
+struct VertTimer(Timer);
+
 fn main() {
     App::new()
         .add_plugins((DefaultPlugins.set(WindowPlugin {
@@ -68,13 +73,14 @@ fn main() {
         ))
         .init_resource::<VertsTest>()
         .add_systems(Update, move_cube)
+        .insert_resource(VertTimer(Timer::from_seconds(0.5, TimerMode::Repeating)))
         .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(WorldInspectorPlugin::new())
         .insert_resource(RapierContext::default())
         .run();
 }
 
-fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>, time: Res<Time>) {
     let mut rng = rand::thread_rng();
 
     commands
@@ -93,7 +99,6 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
     let hasher = PermutationTable::new(rng.gen_range(0..9999));
 
     commands.insert_resource(HasherData { hasher });
-
     commands.spawn((Camera2dBundle::default(), MainCamera));
     /* Create the ground. */
     let _ground = commands
@@ -128,6 +133,7 @@ fn move_cube(
     time: Res<Time>,
     mut gizmos: Gizmos,
     mut verts: ResMut<VertsTest>,
+    mut vert_time: ResMut<VertTimer>,
 ) {
     for mut cube in cubes.iter_mut() {
         let translation = cube.translation;
@@ -153,21 +159,22 @@ fn move_cube(
             movement_direction * 100.0 + cube.translation,
             Color::LIME_GREEN,
         );
+        if vert_time.0.tick(time.delta()).just_finished() {
+            let point_high: Vec2 = Vec2::new(-movement_direction.y, movement_direction.x) * 50.0
+                + cube.translation.truncate();
+            let point_low: Vec2 = Vec2::new(movement_direction.y, -movement_direction.x) * 50.0
+                + cube.translation.truncate();
+            let point_higher = Vec2::new(-movement_direction.y, movement_direction.x) * 100.0
+                + cube.translation.truncate();
+            let point_lower: Vec2 = Vec2::new(movement_direction.y, -movement_direction.x) * 100.0
+                + cube.translation.truncate();
 
-        let point_high: Vec2 = Vec2::new(-movement_direction.y, movement_direction.x) * 50.0
-            + cube.translation.truncate();
-        let point_low: Vec2 = Vec2::new(movement_direction.y, -movement_direction.x) * 50.0
-            + cube.translation.truncate();
-        let point_higher = Vec2::new(-movement_direction.y, movement_direction.x) * 100.0
-            + cube.translation.truncate();
-        let point_lower: Vec2 = Vec2::new(movement_direction.y, -movement_direction.x) * 100.0
-            + cube.translation.truncate();
+            verts.verts.push(point_high);
+            verts.verts.push(point_low);
 
-        verts.verts.push(point_high);
-        verts.verts.push(point_low);
-
-        verts.verts.push(point_higher);
-        verts.verts.push(point_lower);
+            verts.verts.push(point_higher);
+            verts.verts.push(point_lower);
+        }
 
         //TODO: BAD!! dependent on framerate
         // if verts.verts.len() > 1000 {
