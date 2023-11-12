@@ -14,10 +14,22 @@ use mousezoom::MouseZoomPlugin;
 mod mouseworldpos;
 use mouseworldpos::*;
 
-#[derive(Resource)]
+mod mesh_gen;
+use mesh_gen::MeshGenPlugin;
+
+#[derive(Component)]
+struct CubeMarker;
+
+#[derive(Component)]
+struct PlayerMarker;
+
+#[derive(Resource, Default)]
 struct VertsTest {
     verts: Vec<Vec2>,
 }
+
+#[derive(Component)]
+struct GroundMarker;
 
 #[derive(Resource)]
 struct CubeQuery;
@@ -52,16 +64,15 @@ fn main() {
             RaycastPlugin,
             MouseZoomPlugin,
             MouseWorldPos,
+            MeshGenPlugin,
         ))
+        .init_resource::<VertsTest>()
         .add_systems(Update, move_cube)
         .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(WorldInspectorPlugin::new())
         .insert_resource(RapierContext::default())
         .run();
 }
-
-#[derive(Component)]
-struct GroundMarker;
 
 fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
     let mut rng = rand::thread_rng();
@@ -82,8 +93,6 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
     let hasher = PermutationTable::new(rng.gen_range(0..9999));
 
     commands.insert_resource(HasherData { hasher });
-
-    commands.insert_resource(VertsTest { verts: vec![] });
 
     commands.spawn((Camera2dBundle::default(), MainCamera));
     /* Create the ground. */
@@ -112,12 +121,6 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
         // .insert(LockedAxes::ROTATION_LOCKED_Z)
         .id();
 }
-
-#[derive(Component)]
-struct CubeMarker;
-
-#[derive(Component)]
-struct PlayerMarker;
 
 fn move_cube(
     mut cubes: Query<&mut Transform, With<CubeMarker>>,
