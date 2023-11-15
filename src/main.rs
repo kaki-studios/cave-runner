@@ -1,5 +1,5 @@
-use std::time::Instant;
-
+#![windows_subsystem = "windows"]
+//this will disable the console from appearing on top of the game in windows
 use bevy::{prelude::*, window::*};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier2d::prelude::*;
@@ -176,32 +176,14 @@ fn move_cube(
             verts.verts.push(point_lower);
         }
 
-        //TODO: BAD!! dependent on framerate
-        // if verts.verts.len() > 1000 {
-        //     for i in 0..verts.verts.len() - 1000 {
-        //         //remove the start of the cave, so that the cave doesn't get too long
-        //         verts.verts.remove(i);
-        //     }
-        // }
-
-        //we draw a line between each vertex!
-        for (i, value) in verts.verts.iter().enumerate() {
-            //0 or 1
-
-            if i % 4 < 2 {
-                if i + 6 < verts.verts.len() {
-                    //first triangle
-                    gizmos.line_2d(*value, verts.verts[i + 6], Color::GREEN);
-                    gizmos.line_2d(verts.verts[i + 6], verts.verts[i + 2], Color::GREEN);
-                    gizmos.line_2d(*value, verts.verts[i + 2], Color::GREEN);
-                    //second triangle
-                    gizmos.line_2d(*value, verts.verts[i + 4], Color::GREEN);
-                    gizmos.line_2d(verts.verts[i + 4], verts.verts[i + 6], Color::GREEN);
-                    //we dont't need to draw the first line again!
-                    // gizmos.line_2d(*value, verts.verts[i + 6], Color::GREEN);
-                }
+        if verts.verts.len() > 100 {
+            for _ in 0..4 {
+                //remove the start of the cave, so that the cave doesn't get too long
+                verts.verts.remove(0);
             }
         }
+
+        //we draw a line between each vertex!
 
         //simple verts working!
     }

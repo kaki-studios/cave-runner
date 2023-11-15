@@ -12,8 +12,7 @@ pub struct MeshGenPlugin;
 impl Plugin for MeshGenPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, mesh_init)
-            .add_systems(Update, mesh_update); //we don't add the system because it panics at line
-                                               // 52 because the mesh we got doesn't have any ATTRIBUTE_POSITION
+            .add_systems(Update, mesh_update);
     }
 }
 
@@ -45,33 +44,38 @@ fn mesh_update(
         //we get a handle to the mesh
         let handle = query.get_single_mut().expect("");
         //we get an optional mesh from the handle
-        let mesh = meshes.get_mut(handle.0.id());
+        let mut mesh = meshes.get_mut(handle.0.id());
         if mesh.is_some() {
-            //positions holds all the vertices, which might be none
-            let positions = mesh
-                .as_ref()
-                .expect("shit")
-                .attribute(Mesh::ATTRIBUTE_POSITION)
-                .unwrap();
-            //now thing holds the vertices, making sure they exist
-            if let VertexAttributeValues::Float32x3(thing) = positions {
-                //the vertices vector is a more understandable version of thing
-                let mut vertices: Vec<Vec3> =
-                    thing.iter().map(|i| Vec3::new(i[0], i[1], i[2])).collect();
-                //for each old vertex...
-                for i in vertices.len()..verts.verts.len() {
-                    vertices.push(verts.verts[i].extend(0.0));
-                }
-                for i in thing {
-                    //we create temp describing the position of a single vertex
-                    let temp = Vec3::new(i[0], i[1], i[2]);
-                    println!("yo bitch!");
-                    vertices.push(temp);
-                }
+            //vertices holds all the vertices we want to apply to the mesh
+            let mut vertices: Vec<Vec3> = vec![];
 
-                mesh.unwrap()
-                    .insert_attribute(Mesh::ATTRIBUTE_POSITION, vertices);
+            for i in 0..verts.verts.len() {
+                vertices.push(verts.verts[i].extend(0.0));
             }
+
+            mesh.as_mut()
+                .unwrap()
+                .insert_attribute(Mesh::ATTRIBUTE_POSITION, vertices);
+
+            let mut indices: Vec<u16> = vec![];
+
+            for i in 0..verts.verts.len() {
+                //0 or 1
+                if i % 4 < 2 {
+                    if i + 6 < verts.verts.len() {
+                        //first triangle
+                        indices.push(i as u16);
+                        indices.push((i + 6) as u16);
+                        indices.push((i + 2) as u16);
+                        //second triangle
+                        indices.push(i as u16);
+                        indices.push((i + 4) as u16);
+                        indices.push((i + 6) as u16);
+                    }
+                }
+            }
+
+            mesh.unwrap().set_indices(Some(Indices::U16(indices)));
         }
     }
 }
