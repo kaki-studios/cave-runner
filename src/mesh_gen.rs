@@ -48,7 +48,7 @@ fn mesh_update(
         if mesh.is_some() {
             //vertices holds all the vertices we want to apply to the mesh
             let mut vertices: Vec<Vec3> = vec![];
-
+            //TODO: dont use vertices just push verts directly to the mesh
             for i in 0..verts.verts.len() {
                 vertices.push(verts.verts[i].extend(0.0));
             }
