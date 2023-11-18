@@ -3,6 +3,7 @@ use crate::VertsTest;
 use bevy::prelude::*;
 use bevy::render::mesh::*;
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
+use bevy_rapier2d::prelude::*;
 
 #[derive(Component)]
 struct MeshMarker;
@@ -15,6 +16,9 @@ impl Plugin for MeshGenPlugin {
             .add_systems(Update, mesh_update);
     }
 }
+
+#[derive(Component)]
+struct ColliderMarker;
 
 fn mesh_init(
     mut commands: Commands,
@@ -39,8 +43,13 @@ fn mesh_update(
     mut query: Query<&Mesh2dHandle, With<MeshMarker>>,
     mut meshes: ResMut<Assets<Mesh>>,
     timer: Res<VertTimer>,
+    mut commands: Commands,
+    collider_query: Query<Entity, With<ColliderMarker>>,
 ) {
     if timer.0.just_finished() {
+        // for collider in collider_query.iter() {
+        //     commands.entity(collider).despawn();
+        // }
         //we get a handle to the mesh
         let handle = query.get_single_mut().expect("");
         //we get an optional mesh from the handle
@@ -48,9 +57,8 @@ fn mesh_update(
         if mesh.is_some() {
             //vertices holds all the vertices we want to apply to the mesh
             let mut vertices: Vec<Vec3> = vec![];
-            //TODO: dont use vertices just push verts directly to the mesh
-            for i in 0..verts.verts.len() {
-                vertices.push(verts.verts[i].extend(0.0));
+            for i in verts.verts.iter() {
+                vertices.push(i.extend(0.0));
             }
 
             mesh.as_mut()
@@ -74,8 +82,20 @@ fn mesh_update(
                     }
                 }
             }
+            let mut indices_new: Vec<[u32; 2]> = vec![];
+            for index in indices.windows(2) {
+                let new: [u32; 2] = [index[0] as u32, index[1] as u32];
+                indices_new.push(new);
+            }
 
             mesh.unwrap().set_indices(Some(Indices::U16(indices)));
+            //doesnt work, seems like an internal bug, or im just passing the wrong args
+            // commands
+            //     .spawn(Collider::convex_decomposition(
+            //         &verts.verts,
+            //         &indices_new[..],
+            //     ))
+            //     .insert(ColliderMarker);
         }
     }
 }
