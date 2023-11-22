@@ -24,20 +24,13 @@ fn grapple_hook(
         (With<PlayerMarker>, Without<MainCamera>),
     >,
     mut commands: Commands,
-    ground_query: Query<
-        (Entity, Option<&mut ImpulseJoint>, &Transform),
-        (
-            With<GroundMarker>,
-            Without<MainCamera>,
-            Without<PlayerMarker>,
-        ),
-    >,
     mut mousebtn_evr: EventReader<MouseButtonInput>,
     mut ext_forces: Query<&mut ExternalForce>,
+    transforms: Query<(Entity, &Transform), (Without<PlayerMarker>, Without<MainCamera>)>,
 ) {
-    // for mut camera in &mut q_camera {
-    //     camera.translation = ball_query.single().0.translation;
-    // }
+    for mut camera in &mut q_camera {
+        camera.translation = ball_query.single().0.translation;
+    }
 
     //somehow raycast doesn't work perfectly after changing camera position to follow player...
     let ray_dir = mousepos.0;
@@ -62,17 +55,20 @@ fn grapple_hook(
                 rapier_context.intersections_with_point(point, filter, |entity| {
                     // Callback called on each collider with a shape containing the point.
 
-                    //basically we just create a joint connecting the ground with the player. doesn't support multiple
-                    //ground objects
-
+                    //basically we just create a joint connecting the ground with the player.
+                    let mut anchor: Vec2 = Vec2::ZERO;
+                    for (en, tr) in transforms.iter() {
+                        if en == entity {
+                            anchor = tr.translation.truncate()
+                        }
+                    }
                     let joint = RopeJointBuilder::new()
-                        .local_anchor1(
-                            mousepos.0 - ground_query.single().2.translation.truncate(), // Vec2::ZERO,
-                        )
+                        .local_anchor1(mousepos.0 - anchor)
                         .limits([
                             0.5,
                             Vec3::new(mousepos.0.x, mousepos.0.y, 0.0)
-                                .distance(ball_query.single().0.translation),
+                                .distance(ball_query.single().0.translation)
+                                / 1.25,
                             // 500.0,
                         ])
                         .local_anchor2(Vec2::ZERO);
