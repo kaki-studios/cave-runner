@@ -43,14 +43,15 @@ fn mesh_update(
     mut query: Query<&Mesh2dHandle, With<MeshMarker>>,
     mut meshes: ResMut<Assets<Mesh>>,
     timer: Res<VertTimer>,
+    time: Res<Time>,
     mut commands: Commands,
     collider_query: Query<Entity, With<ColliderMarker>>,
 ) {
     if timer.0.just_finished() {
-        // for collider in collider_query.iter() {
-        //     commands.entity(collider).despawn();
-        // }
-        //we get a handle to the mesh
+        for collider in collider_query.iter() {
+            commands.entity(collider).despawn();
+        }
+        // we get a handle to the mesh
         let handle = query.get_single_mut().expect("");
         //we get an optional mesh from the handle
         let mut mesh = meshes.get_mut(handle.0.id());
@@ -84,18 +85,22 @@ fn mesh_update(
             }
             let mut indices_new: Vec<[u32; 2]> = vec![];
             for index in indices.windows(2) {
+                // println!("{}", index[0]);
+
                 let new: [u32; 2] = [index[0] as u32, index[1] as u32];
                 indices_new.push(new);
             }
 
             mesh.unwrap().set_indices(Some(Indices::U16(indices)));
             //doesnt work, seems like an internal bug, or im just passing the wrong args
-            // commands
-            //     .spawn(Collider::convex_decomposition(
-            //         &verts.verts,
-            //         &indices_new[..],
-            //     ))
-            //     .insert(ColliderMarker);
+            if time.elapsed().as_secs() > 5 {
+                commands
+                    .spawn(Collider::convex_decomposition(
+                        &verts.verts,
+                        &indices_new[..],
+                    ))
+                    .insert(ColliderMarker);
+            }
         }
     }
 }

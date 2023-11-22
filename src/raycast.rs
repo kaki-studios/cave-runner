@@ -65,48 +65,43 @@ fn grapple_hook(
                     //basically we just create a joint connecting the ground with the player. doesn't support multiple
                     //ground objects
 
-                    if entity == ground_query.single().0 {
-                        let joint = RopeJointBuilder::new()
-                            .local_anchor2(
-                                mousepos.0 - ground_query.single().2.translation.truncate(), // Vec2::ZERO,
-                            )
-                            .limits([
-                                0.5,
-                                Vec3::new(mousepos.0.x, mousepos.0.y, 0.0)
-                                    .distance(ball_query.single().0.translation),
-                                // 500.0,
-                            ])
-                            .local_anchor1(Vec2::ZERO);
+                    let joint = RopeJointBuilder::new()
+                        .local_anchor1(
+                            mousepos.0 - ground_query.single().2.translation.truncate(), // Vec2::ZERO,
+                        )
+                        .limits([
+                            0.5,
+                            Vec3::new(mousepos.0.x, mousepos.0.y, 0.0)
+                                .distance(ball_query.single().0.translation),
+                            // 500.0,
+                        ])
+                        .local_anchor2(Vec2::ZERO);
 
-                        commands
-                            .entity(entity)
-                            .insert(ImpulseJoint::new(ball_query.single().1, joint));
+                    commands
+                        .entity(ball_query.single().1)
+                        .insert(ImpulseJoint::new(entity, joint));
 
-                        //we add a force
-                        let mut velocity_vec = Vec2::ZERO;
+                    //we add a force
+                    let mut velocity_vec = Vec2::ZERO;
 
-                        for (_, _, rb_vels, _) in &mut ball_query {
-                            velocity_vec = rb_vels.linvel;
-                        }
-                        //GravityScale to 0 for better mechanics
-                        *ball_query.single_mut().3 = GravityScale(0.0);
-
-                        for mut ext_force in ext_forces.iter_mut() {
-                            ext_force.force = velocity_vec * 1000.0;
-                            ext_force.torque = 100.0;
-                        }
-
-                        return false;
-                        // Return `false` if we want to stop searching for other colliders containing this point.
+                    for (_, _, rb_vels, _) in &mut ball_query {
+                        velocity_vec = rb_vels.linvel;
                     }
-                    //we didn't hit the correct entity, so we keep searching for other colliders by
-                    //returning true
-                    true
+                    //GravityScale to 0 for better mechanics
+                    *ball_query.single_mut().3 = GravityScale(0.0);
+
+                    for mut ext_force in ext_forces.iter_mut() {
+                        ext_force.force = velocity_vec * 1000.0;
+                        ext_force.torque = 100.0;
+                    }
+
+                    false
+                    // Return `false` if we want to stop searching for other colliders containing this point.
                 });
             }
             ButtonState::Released => {
                 commands
-                    .entity(ground_query.single().0)
+                    .entity(ball_query.single().1)
                     .remove::<ImpulseJoint>();
 
                 for mut ext_force in ext_forces.iter_mut() {
