@@ -50,7 +50,7 @@ fn grapple_hook(
             ButtonState::Pressed => {
                 let point = mousepos.0;
                 //only fixed so we dont raycast with the player
-                let filter = QueryFilter::only_fixed();
+                let filter = QueryFilter::exclude_dynamic();
 
                 rapier_context.intersections_with_point(point, filter, |entity| {
                     // Callback called on each collider with a shape containing the point.

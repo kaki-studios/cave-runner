@@ -8,12 +8,18 @@ use bevy_rapier2d::prelude::*;
 #[derive(Component)]
 struct MeshMarker;
 
+#[derive(Resource, Default)]
+struct ColliderList {
+    colliders: Vec<Entity>,
+}
+
 pub struct MeshGenPlugin;
 
 impl Plugin for MeshGenPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, mesh_init)
-            .add_systems(Update, mesh_update);
+            .add_systems(PostUpdate, mesh_update)
+            .init_resource::<ColliderList>(); // PostUpdate because verts are added in main.rs
     }
 }
 
@@ -46,11 +52,20 @@ fn mesh_update(
     time: Res<Time>,
     mut commands: Commands,
     collider_query: Query<Entity, With<ColliderMarker>>,
+    mut collider_list: ResMut<ColliderList>,
 ) {
     if timer.0.just_finished() {
-        for collider in collider_query.iter() {
-            commands.entity(collider).despawn();
+        let mut count = 0;
+        let _ = collider_query.iter().map(|_| count += 1);
+
+        if collider_list.colliders.len() >= 48 {
+            for _ in 0..=1 {
+                println!("yo");
+                commands.entity(collider_list.colliders[0]).despawn();
+                collider_list.colliders.remove(0);
+            }
         }
+
         // we get a handle to the mesh
         let handle = query.get_single_mut().expect("");
         //we get an optional mesh from the handle
@@ -83,24 +98,60 @@ fn mesh_update(
                     }
                 }
             }
-            let mut indices_new: Vec<[u32; 2]> = vec![];
-            for index in indices.windows(2) {
-                // println!("{}", index[0]);
 
-                let new: [u32; 2] = [index[0] as u32, index[1] as u32];
-                indices_new.push(new);
-            }
+            mesh.unwrap()
+                .set_indices(Some(Indices::U16(indices.clone())));
 
-            mesh.unwrap().set_indices(Some(Indices::U16(indices)));
-            //doesnt work, seems like an internal bug, or im just passing the wrong args
-            if time.elapsed().as_secs() > 5 {
-                commands
-                    .spawn(Collider::convex_decomposition(
-                        &verts.verts,
-                        &indices_new[..],
-                    ))
-                    .insert(ColliderMarker);
+            if time.elapsed().as_secs_f32() > 1.5 {
+                //it crashes otherwise
+                for chunk in verts.verts.windows(8).rev().take(1) {
+                    //we make 2 colliders per "chunk"
+                    let mut vertices1: Vec<Vec2> = vec![];
+                    vertices1.push(chunk[4]);
+                    vertices1.push(chunk[6]);
+                    vertices1.push(chunk[2]);
+                    vertices1.push(chunk[0]);
+
+                    let mut vertices2: Vec<Vec2> = vec![];
+
+                    vertices2.push(chunk[7]);
+                    vertices2.push(chunk[5]);
+                    vertices2.push(chunk[1]);
+                    vertices2.push(chunk[3]);
+
+                    let en1 = commands
+                        .spawn(Collider::convex_polyline(vertices1).unwrap())
+                        .insert(ColliderMarker)
+                        .insert(RigidBody::Fixed)
+                        .id();
+                    let en2 = commands
+                        .spawn(Collider::convex_polyline(vertices2).unwrap())
+                        .insert(ColliderMarker)
+                        .insert(RigidBody::Fixed)
+                        .id();
+                    collider_list.colliders.push(en1);
+                    collider_list.colliders.push(en2);
+
+                    // println!("spawned!");
+                }
+                // commands
+                //     .spawn(Collider::convex_decomposition(
+                //         &verts.verts,
+                //         &vec2slice(indices)[..],
+                //     ))
+                //     .insert(ColliderMarker);
             }
         }
     }
 }
+
+// fn vec2slice(indices: Vec<u16>) -> Vec<[u32; 2]> {
+//     let mut indices_new: Vec<[u32; 2]> = vec![];
+//     for index in indices.windows(2) {
+//         // println!("{}", index[0]);
+//
+//         let new: [u32; 2] = [index[0] as u32, index[1] as u32];
+//         indices_new.push(new);
+//     }
+//     indices_new
+// }

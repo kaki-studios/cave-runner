@@ -90,7 +90,9 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>, time: R
                 custom_size: Some(Vec2::new(50.0, 50.0)),
                 ..default()
             },
-            transform: Transform::from_translation(Vec3::new(0., 0., 0.)),
+            transform: Transform::from_translation(Vec3::new(0., 0., 0.))
+                .with_rotation(Quat::from_rotation_z(-0.5 * std::f32::consts::PI)),
+
             texture: asset_server.load("square.png"),
             ..default()
         })
@@ -100,13 +102,6 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>, time: R
 
     commands.insert_resource(HasherData { hasher });
     commands.spawn((Camera2dBundle::default(), MainCamera));
-    /* Create the ground. */
-    let _ground = commands
-        .spawn(RigidBody::Fixed)
-        .insert(Collider::cuboid(500.0, 30.0))
-        .insert(TransformBundle::from(Transform::from_xyz(0.0, -100.0, 0.0)))
-        .insert(GroundMarker)
-        .id();
 
     /* Create the bouncing ball. */
     let _ball = commands
@@ -114,9 +109,7 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>, time: R
         .insert(Collider::ball(30.0))
         .insert(Restitution::coefficient(0.7))
         .insert(GravityScale(1.0))
-        .insert(TransformBundle::from(Transform::from_xyz(
-            1000.0, 800.0, 0.0,
-        )))
+        .insert(TransformBundle::from(Transform::from_xyz(0.0, 800.0, 0.0)))
         .insert(Velocity::zero())
         .insert(ExternalForce {
             force: Vec2::ZERO,
@@ -160,13 +153,13 @@ fn move_cube(
             Color::LIME_GREEN,
         );
         if vert_time.0.tick(time.delta()).just_finished() {
-            let point_high: Vec2 = Vec2::new(-movement_direction.y, movement_direction.x) * 50.0
+            let point_high: Vec2 = Vec2::new(-movement_direction.y, movement_direction.x) * 100.0
                 + cube.translation.truncate();
-            let point_low: Vec2 = Vec2::new(movement_direction.y, -movement_direction.x) * 50.0
+            let point_low: Vec2 = Vec2::new(movement_direction.y, -movement_direction.x) * 100.0
                 + cube.translation.truncate();
-            let point_higher = Vec2::new(-movement_direction.y, movement_direction.x) * 100.0
+            let point_higher = Vec2::new(-movement_direction.y, movement_direction.x) * 200.0
                 + cube.translation.truncate();
-            let point_lower: Vec2 = Vec2::new(movement_direction.y, -movement_direction.x) * 100.0
+            let point_lower: Vec2 = Vec2::new(movement_direction.y, -movement_direction.x) * 200.0
                 + cube.translation.truncate();
 
             verts.verts.push(point_high);
