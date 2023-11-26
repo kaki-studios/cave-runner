@@ -74,8 +74,8 @@ fn main() {
         .init_resource::<VertsTest>()
         .add_systems(Update, move_cube)
         .insert_resource(VertTimer(Timer::from_seconds(0.5, TimerMode::Repeating)))
-        .add_plugins(RapierDebugRenderPlugin::default())
-        .add_plugins(WorldInspectorPlugin::new())
+        // .add_plugins(RapierDebugRenderPlugin::default())
+        // .add_plugins(WorldInspectorPlugin::new())
         .insert_resource(RapierContext::default())
         .run();
 }
@@ -87,7 +87,7 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>, time: R
         .spawn(SpriteBundle {
             sprite: Sprite {
                 color: Color::rgb(0.25, 0.25, 0.75),
-                custom_size: Some(Vec2::new(50.0, 50.0)),
+                custom_size: Some(Vec2::new(0.0, 0.0)),
                 ..default()
             },
             transform: Transform::from_translation(Vec3::new(0., 0., 0.))
@@ -108,12 +108,24 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>, time: R
         .spawn(RigidBody::Dynamic)
         .insert(Collider::ball(30.0))
         .insert(Restitution::coefficient(0.7))
-        .insert(GravityScale(1.0))
-        .insert(TransformBundle::from(Transform::from_xyz(0.0, 800.0, 0.0)))
+        .insert(GravityScale(0.0))
+        // .insert(TransformBundle::from(Transform::from_xyz(0.0, 800.0, 0.0)))
         .insert(Velocity::zero())
         .insert(ExternalForce {
             force: Vec2::ZERO,
             torque: 0.0,
+        })
+        .insert(SpriteBundle {
+            sprite: Sprite {
+                color: Color::rgb(1.0, 1.0, 1.0),
+                custom_size: Some(Vec2::new(100.0, 100.0)),
+                ..default()
+            },
+
+            transform: Transform::from_translation(Vec3::new(0., 0., 0.)),
+
+            texture: asset_server.load("character.png"),
+            ..default()
         })
         .insert(PlayerMarker)
         // .insert(LockedAxes::ROTATION_LOCKED_Z)
@@ -138,28 +150,28 @@ fn move_cube(
         cube.rotate_z(
             open_simplex_2d::<PermutationTable>(
                 [
-                    translation.x as f64 / 300.0_f64,
-                    translation.y as f64 / 300.0_f64,
+                    translation.x as f64 / 500.0_f64,
+                    translation.y as f64 / 500.0_f64,
                 ],
                 &hasher.hasher,
             ) as f32
                 * time.delta_seconds()
-                * 5.0,
+                * 2.5,
         );
 
-        gizmos.line(
-            cube.translation,
-            movement_direction * 100.0 + cube.translation,
-            Color::LIME_GREEN,
-        );
+        // gizmos.line(
+        //     cube.translation,
+        //     movement_direction * 100.0 + cube.translation,
+        //     Color::LIME_GREEN,
+        // );
         if vert_time.0.tick(time.delta()).just_finished() {
-            let point_high: Vec2 = Vec2::new(-movement_direction.y, movement_direction.x) * 100.0
+            let point_high: Vec2 = Vec2::new(-movement_direction.y, movement_direction.x) * 200.0
                 + cube.translation.truncate();
-            let point_low: Vec2 = Vec2::new(movement_direction.y, -movement_direction.x) * 100.0
+            let point_low: Vec2 = Vec2::new(movement_direction.y, -movement_direction.x) * 200.0
                 + cube.translation.truncate();
-            let point_higher = Vec2::new(-movement_direction.y, movement_direction.x) * 200.0
+            let point_higher = Vec2::new(-movement_direction.y, movement_direction.x) * 350.0
                 + cube.translation.truncate();
-            let point_lower: Vec2 = Vec2::new(movement_direction.y, -movement_direction.x) * 200.0
+            let point_lower: Vec2 = Vec2::new(movement_direction.y, -movement_direction.x) * 350.0
                 + cube.translation.truncate();
 
             verts.verts.push(point_high);
