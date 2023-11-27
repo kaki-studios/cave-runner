@@ -18,7 +18,7 @@ pub struct MeshGenPlugin;
 impl Plugin for MeshGenPlugin {
     fn build(&self, app: &mut App) {
         app //.add_systems(Startup, mesh_init)
-            .add_systems(Update, mesh_update)
+            .add_systems(PostUpdate, mesh_update)
             .init_resource::<ColliderList>(); // PostUpdate because verts are added in main.rs
     }
 }
@@ -49,7 +49,6 @@ fn mesh_update(
     verts: Res<VertsTest>,
     mut meshes: ResMut<Assets<Mesh>>,
     timer: Res<VertTimer>,
-    time: Res<Time>,
     mut commands: Commands,
     mut collider_list: ResMut<ColliderList>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -57,8 +56,7 @@ fn mesh_update(
     //every 0.5 seconds
     if timer.0.just_finished() {
         if collider_list.colliders.len() >= 100 {
-            for _ in 0..=3 {
-                println!("yo");
+            for _ in 0..4 {
                 commands.entity(collider_list.colliders[0]).despawn();
                 collider_list.colliders.remove(0);
             }

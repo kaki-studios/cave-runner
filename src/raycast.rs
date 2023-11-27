@@ -95,18 +95,14 @@ fn grapple_hook(
                     grapple_point.point = mousepos.0;
                     grapple_point.should_draw = true;
                     //we add a force
-                    let velocity_vec;
-
-                    // for (_, _, rb_vels, _) in &mut ball_query {
-                    //     velocity_vec = rb_vels.linvel;
-                    // }
-                    velocity_vec = -ball_query.single().0.translation.truncate() + mousepos.0;
 
                     //GravityScale to 0 for better mechanics
                     *ball_query.single_mut().3 = GravityScale(0.0);
 
                     for mut ext_force in ext_forces.iter_mut() {
-                        ext_force.force = velocity_vec * 1000.0;
+                        ext_force.force =
+                            (-ball_query.single().0.translation.truncate() + mousepos.0) * 1000.0;
+
                         ext_force.torque = 100.0;
                     }
 
@@ -125,7 +121,7 @@ fn grapple_hook(
                 }
                 grapple_point.should_draw = false;
 
-                // *ball_query.single_mut().3 = GravityScale(1.0);
+                *ball_query.single_mut().3 = GravityScale(1.0);
             }
         }
     }
