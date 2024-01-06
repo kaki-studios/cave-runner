@@ -1,5 +1,5 @@
 use crate::mouseworldpos::MyWorldCoords;
-use crate::{GroundMarker, MainCamera, PlayerMarker};
+use crate::{MainCamera, PlayerMarker};
 use bevy::input::mouse::MouseButtonInput;
 use bevy::input::ButtonState;
 use bevy::prelude::*;
@@ -39,8 +39,7 @@ fn grapple_hook(
         camera.translation = ball_query.single().0.translation;
     }
 
-    //somehow raycast doesn't work perfectly after changing camera position to follow player...
-    let ray_dir = mousepos.0;
+    // let ray_dir = mousepos.0;
     // gizmos.line_2d(
     //     ball_query.single().0.translation.truncate(),
     //     ray_dir,

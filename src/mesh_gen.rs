@@ -1,5 +1,5 @@
 use crate::VertTimer;
-use crate::VertsTest;
+use crate::VertsResource;
 use bevy::prelude::*;
 use bevy::render::mesh::*;
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
@@ -18,35 +18,16 @@ pub struct MeshGenPlugin;
 impl Plugin for MeshGenPlugin {
     fn build(&self, app: &mut App) {
         app //.add_systems(Startup, mesh_init)
-            .add_systems(PostUpdate, mesh_update)
-            .init_resource::<ColliderList>(); // PostUpdate because verts are added in main.rs
+            .add_systems(PostUpdate, mesh_update) // PostUpdate because verts are added in main.rs
+            .init_resource::<ColliderList>();
     }
 }
 
 #[derive(Component)]
 struct ColliderMarker;
 
-// fn mesh_init(
-//     mut commands: Commands,
-//     mut meshes: ResMut<Assets<Mesh>>,
-//     mut materials: ResMut<Assets<ColorMaterial>>,
-// ) {
-//     let mut mesh_empty = Mesh::new(PrimitiveTopology::TriangleList);
-//     mesh_empty.insert_attribute(Mesh::ATTRIBUTE_POSITION, Vec::<Vec3>::new());
-//     //spawn an empty entity so we can modify it later in mesh_update
-//     commands
-//         .spawn(MaterialMesh2dBundle {
-//             mesh: Mesh2dHandle(meshes.add(mesh_empty)),
-//             transform: Transform::default(),
-//             material: materials.add(ColorMaterial::from(Color::GRAY)),
-//             // visibility: Visibility::Visible,
-//             ..default()
-//         })
-//         .insert(MeshMarker);
-// }
-
 fn mesh_update(
-    verts: Res<VertsTest>,
+    verts: Res<VertsResource>,
     mut meshes: ResMut<Assets<Mesh>>,
     timer: Res<VertTimer>,
     mut commands: Commands,
@@ -55,13 +36,6 @@ fn mesh_update(
 ) {
     //every 0.5 seconds
     if timer.0.just_finished() {
-        if collider_list.colliders.len() >= 100 {
-            for _ in 0..4 {
-                commands.entity(collider_list.colliders[0]).despawn();
-                collider_list.colliders.remove(0);
-            }
-        }
-
         if verts.verts.len() >= 8 {
             //it crashes otherwise
             for chunk in verts.verts.windows(8).rev().take(1) {
@@ -128,6 +102,7 @@ fn mesh_update(
                     .id();
                 collider_list.colliders.push(mesh11);
                 collider_list.colliders.push(mesh22);
+                println!("collider_list len: {}", collider_list.colliders.len());
 
                 // println!("spawned!");
             }
@@ -138,16 +113,19 @@ fn mesh_update(
             //     ))
             //     .insert(ColliderMarker);
         }
+        if collider_list.colliders.len() > 100 {
+            for _ in 0..4 {
+                //delete the tail once its too big
+                commands.entity(collider_list.colliders[0]).despawn();
+                collider_list.colliders.remove(0);
+            }
+        }
     }
 }
 
 // fn vec2slice(indices: Vec<u16>) -> Vec<[u32; 2]> {
-//     let mut indices_new: Vec<[u32; 2]> = vec![];
-//     for index in indices.windows(2) {
-//         // println!("{}", index[0]);
-//
-//         let new: [u32; 2] = [index[0] as u32, index[1] as u32];
-//         indices_new.push(new);
-//     }
-//     indices_new
+//     indices
+//         .windows(2)
+//         .map(|slice| [slice[0] as u32, slice[1] as u32])
+//         .collect()
 // }

@@ -26,7 +26,7 @@ struct CubeMarker;
 struct PlayerMarker;
 
 #[derive(Resource, Default)]
-struct VertsTest {
+struct VertsResource {
     verts: Vec<Vec2>,
 }
 
@@ -56,9 +56,6 @@ fn main() {
                 // Tells wasm not to override default event handling, like F5, Ctrl+R etc.
                 prevent_default_event_handling: false,
                 window_theme: Some(WindowTheme::Dark),
-                // This will spawn an invisible window
-                // The window will be made visible in the make_visible() system after 3 frames.
-                // This is useful when you want to avoid the white window that shows up before the GPU is ready to render the app.
                 ..default()
             }),
             ..default()
@@ -70,24 +67,26 @@ fn main() {
             MouseZoomPlugin,
             MouseWorldPos,
             MeshGenPlugin,
+            RapierDebugRenderPlugin::default(),
         ))
-        .init_resource::<VertsTest>()
+        .init_resource::<VertsResource>()
         .add_systems(Update, move_cube)
         .insert_resource(VertTimer(Timer::from_seconds(0.5, TimerMode::Repeating)))
         // .add_plugins(RapierDebugRenderPlugin::default())
-        // .add_plugins(WorldInspectorPlugin::new())
+        .add_plugins(WorldInspectorPlugin::new())
         .insert_resource(RapierContext::default())
         .run();
 }
 
-fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>, time: Res<Time>) {
+fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
     let mut rng = rand::thread_rng();
 
-    commands
+    //TODO: attach a sensor and win the game when the player touches it
+    let _cube = commands
         .spawn(SpriteBundle {
             sprite: Sprite {
                 color: Color::rgb(0.25, 0.25, 0.75),
-                custom_size: Some(Vec2::new(0.0, 0.0)),
+                custom_size: Some(Vec2::new(100.0, 100.0)),
                 ..default()
             },
             transform: Transform::from_translation(Vec3::new(0., 0., 0.))
@@ -96,19 +95,20 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>, time: R
             texture: asset_server.load("square.png"),
             ..default()
         })
-        .insert(CubeMarker);
+        .insert(CubeMarker)
+        .id();
 
     let hasher = PermutationTable::new(rng.gen_range(0..9999));
 
     commands.insert_resource(HasherData { hasher });
     commands.spawn((Camera2dBundle::default(), MainCamera));
 
-    /* Create the bouncing ball. */
+    /* Create the bouncing ball. ACtually this is the player! */
     let _ball = commands
         .spawn(RigidBody::Dynamic)
         .insert(Collider::ball(30.0))
-        .insert(Restitution::coefficient(0.7))
-        .insert(GravityScale(0.0))
+        .insert(Restitution::coefficient(0.5))
+        .insert(GravityScale(1.0))
         // .insert(TransformBundle::from(Transform::from_xyz(0.0, 800.0, 0.0)))
         .insert(Velocity::zero())
         .insert(ExternalForce {
@@ -122,7 +122,7 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>, time: R
                 ..default()
             },
 
-            transform: Transform::from_translation(Vec3::new(0., 0., 0.)),
+            transform: Transform::from_translation(Vec3::new(0., 1000., 0.)),
 
             texture: asset_server.load("character.png"),
             ..default()
@@ -136,16 +136,27 @@ fn move_cube(
     mut cubes: Query<&mut Transform, With<CubeMarker>>,
     hasher: Res<HasherData>,
     time: Res<Time>,
-    mut gizmos: Gizmos,
-    mut verts: ResMut<VertsTest>,
+    mut verts: ResMut<VertsResource>,
     mut vert_time: ResMut<VertTimer>,
+    player: Query<&Velocity, With<PlayerMarker>>,
 ) {
     for mut cube in cubes.iter_mut() {
         let translation = cube.translation;
 
         let movement_direction = cube.rotation * Vec3::X;
 
-        cube.translation += movement_direction * 200.0 * time.delta_seconds();
+        //velocity never goes below 200
+        //this presents a new problem:
+        //the player will, over time, fall out from the end
+        //because they will never catch up
+        let velocity = player.single().linvel.length();
+        // cube.translation += movement_direction * max(velocity, 200.0) * time.delta_seconds();
+        // NOTE: See https://excalidraw.com/#json=WDUMPDCcBqB9z2h7YNwHV,pTGgmhEXSQNG5B8z4AneHw
+        //TODO: fix this (and the deletion of verts) so that the player never sees either end of
+        //the cave
+        //NOTE: shouldnt really use velocity here (look at first comment)
+        cube.translation += movement_direction * velocity * time.delta_seconds();
+        let turniness = 2.5 * velocity / 300.0;
 
         cube.rotate_z(
             open_simplex_2d::<PermutationTable>(
@@ -156,7 +167,7 @@ fn move_cube(
                 &hasher.hasher,
             ) as f32
                 * time.delta_seconds()
-                * 2.5,
+                * turniness,
         );
 
         // gizmos.line(
@@ -179,17 +190,15 @@ fn move_cube(
 
             verts.verts.push(point_higher);
             verts.verts.push(point_lower);
-        }
-
-        if verts.verts.len() > 100 {
-            for _ in 0..4 {
-                //remove the start of the cave, so that the cave doesn't get too long
-                verts.verts.remove(0);
+            if verts.verts.len() > 8 {
+                for _ in 0..4 {
+                    //remove all verts except the ones needed for current mesh gen!
+                    verts.verts.remove(0);
+                }
             }
+            println!("verts len {}", verts.verts.len());
         }
 
-        //we draw a line between each vertex!
-
-        //simple verts working!
+        //verts working!
     }
 }
