@@ -96,6 +96,8 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
             ..default()
         })
         .insert(CubeMarker)
+        .insert(Collider::cuboid(25.0, 25.0))
+        .insert(Sensor)
         .id();
 
     let hasher = PermutationTable::new(rng.gen_range(0..9999));
@@ -145,17 +147,12 @@ fn move_cube(
 
         let movement_direction = cube.rotation * Vec3::X;
 
-        //velocity never goes below 200
+        let velocity = player.single().linvel.length();
+        //NOTE: shouldnt really use velocity here
         //this presents a new problem:
         //the player will, over time, fall out from the end
         //because they will never catch up
-        let velocity = player.single().linvel.length();
-        // cube.translation += movement_direction * max(velocity, 200.0) * time.delta_seconds();
-        // NOTE: See https://excalidraw.com/#json=WDUMPDCcBqB9z2h7YNwHV,pTGgmhEXSQNG5B8z4AneHw
-        //TODO: fix this (and the deletion of verts) so that the player never sees either end of
-        //the cave
-        //NOTE: shouldnt really use velocity here (look at first comment)
-        cube.translation += movement_direction * velocity * time.delta_seconds();
+        cube.translation += movement_direction * velocity.max(1.0) * time.delta_seconds();
         let turniness = 2.5 * velocity / 300.0;
 
         cube.rotate_z(
