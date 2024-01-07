@@ -36,6 +36,7 @@ fn mesh_update(
 ) {
     //every 0.5 seconds
     if timer.0.just_finished() {
+        println!("collider_list len: {}", collider_list.colliders.len());
         if verts.verts.len() >= 8 {
             //it crashes otherwise
             for chunk in verts.verts.windows(8).rev().take(1) {
@@ -102,7 +103,6 @@ fn mesh_update(
                     .id();
                 collider_list.colliders.push(mesh11);
                 collider_list.colliders.push(mesh22);
-                println!("collider_list len: {}", collider_list.colliders.len());
 
                 // println!("spawned!");
             }

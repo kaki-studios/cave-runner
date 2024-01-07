@@ -7,6 +7,9 @@ use noise::core::open_simplex::*;
 use noise::permutationtable::PermutationTable;
 use rand::Rng;
 
+mod collision;
+use collision::CollisionPlugin;
+
 mod raycast;
 use raycast::RaycastPlugin;
 
@@ -67,6 +70,7 @@ fn main() {
             MouseZoomPlugin,
             MouseWorldPos,
             MeshGenPlugin,
+            CollisionPlugin,
             RapierDebugRenderPlugin::default(),
         ))
         .init_resource::<VertsResource>()
@@ -96,8 +100,9 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
             ..default()
         })
         .insert(CubeMarker)
-        .insert(Collider::cuboid(25.0, 25.0))
+        .insert(Collider::cuboid(50.0, 50.0))
         .insert(Sensor)
+        .insert(ActiveEvents::COLLISION_EVENTS)
         .id();
 
     let hasher = PermutationTable::new(rng.gen_range(0..9999));
@@ -152,7 +157,7 @@ fn move_cube(
         //this presents a new problem:
         //the player will, over time, fall out from the end
         //because they will never catch up
-        cube.translation += movement_direction * velocity.max(1.0) * time.delta_seconds();
+        cube.translation += movement_direction * /*velocity.max(1.0)*/ 200.0 * time.delta_seconds();
         let turniness = 2.5 * velocity / 300.0;
 
         cube.rotate_z(
@@ -193,7 +198,7 @@ fn move_cube(
                     verts.verts.remove(0);
                 }
             }
-            println!("verts len {}", verts.verts.len());
+            // println!("verts len {}", verts.verts.len());
         }
 
         //verts working!
