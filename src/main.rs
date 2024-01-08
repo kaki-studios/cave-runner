@@ -47,6 +47,20 @@ struct HasherData {
 #[derive(Resource)]
 struct VertTimer(Timer);
 
+#[derive(Resource, Clone)]
+pub enum Difficulty {
+    Normal(i32),
+    Hardest,
+}
+
+// impl Difficulty {
+//     fn to(self) -> Self {
+//         match self {
+//             i => i,
+//         }
+//     }
+// }
+
 fn main() {
     App::new()
         .add_plugins((DefaultPlugins.set(WindowPlugin {
@@ -74,6 +88,7 @@ fn main() {
             RapierDebugRenderPlugin::default(),
         ))
         .init_resource::<VertsResource>()
+        .insert_resource(Difficulty::Normal(200))
         .add_systems(Update, move_cube)
         .insert_resource(VertTimer(Timer::from_seconds(0.5, TimerMode::Repeating)))
         // .add_plugins(RapierDebugRenderPlugin::default())
@@ -146,6 +161,7 @@ fn move_cube(
     mut verts: ResMut<VertsResource>,
     mut vert_time: ResMut<VertTimer>,
     player: Query<&Velocity, With<PlayerMarker>>,
+    difficulty: Res<Difficulty>,
 ) {
     for mut cube in cubes.iter_mut() {
         let translation = cube.translation;
@@ -157,7 +173,11 @@ fn move_cube(
         //this presents a new problem:
         //the player will, over time, fall out from the end
         //because they will never catch up
-        cube.translation += movement_direction * /*velocity.max(1.0)*/ 200.0 * time.delta_seconds();
+        let level = match difficulty.clone() {
+            Difficulty::Normal(speed) => speed as f32,
+            Difficulty::Hardest => velocity.max(1.0),
+        };
+        cube.translation += movement_direction * level * time.delta_seconds();
         let turniness = 2.5 * velocity / 300.0;
 
         cube.rotate_z(
