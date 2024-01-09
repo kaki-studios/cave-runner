@@ -47,11 +47,13 @@ struct HasherData {
 #[derive(Resource)]
 struct VertTimer(Timer);
 
-#[derive(Resource, Clone)]
+#[derive(Resource, Clone, Debug)]
 pub enum Difficulty {
     Normal(i32),
     Hardest,
 }
+#[derive(Component)]
+struct DifficultyText;
 
 // impl Difficulty {
 //     fn to(self) -> Self {
@@ -85,7 +87,7 @@ fn main() {
             MouseWorldPos,
             MeshGenPlugin,
             CollisionPlugin,
-            RapierDebugRenderPlugin::default(),
+            // RapierDebugRenderPlugin::default(),
         ))
         .init_resource::<VertsResource>()
         .insert_resource(Difficulty::Normal(200))
@@ -96,11 +98,25 @@ fn main() {
         .insert_resource(RapierContext::default())
         .run();
 }
-
 fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
     let mut rng = rand::thread_rng();
+    commands.spawn((
+        TextBundle::from_section(
+            "Difficulty: Normal",
+            TextStyle {
+                font_size: 100.0,
+                ..default()
+            },
+        )
+        .with_style(Style {
+            position_type: PositionType::Absolute,
+            bottom: Val::Px(5.0),
+            left: Val::Px(15.0),
+            ..default()
+        }),
+        DifficultyText,
+    ));
 
-    //TODO: attach a sensor and win the game when the player touches it
     let _cube = commands
         .spawn(SpriteBundle {
             sprite: Sprite {
@@ -169,10 +185,7 @@ fn move_cube(
         let movement_direction = cube.rotation * Vec3::X;
 
         let velocity = player.single().linvel.length();
-        //NOTE: shouldnt really use velocity here
-        //this presents a new problem:
-        //the player will, over time, fall out from the end
-        //because they will never catch up
+        //goofy
         let level = match difficulty.clone() {
             Difficulty::Normal(speed) => speed as f32,
             Difficulty::Hardest => velocity.max(1.0),
