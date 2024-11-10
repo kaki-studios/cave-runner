@@ -50,7 +50,7 @@ fn grapple_hook(
         gizmos.line_2d(
             ball_query.single().0.translation.truncate(),
             grapple_point.point,
-            Color::BEIGE,
+            Color::WHITE,
         );
     }
 
@@ -77,16 +77,19 @@ fn grapple_hook(
                             anchor = tr.translation.truncate()
                         }
                     }
-                    let joint = RopeJointBuilder::new()
-                        .local_anchor1(mousepos.0 - anchor)
-                        .limits([
-                            0.5,
-                            Vec3::new(mousepos.0.x, mousepos.0.y, 0.0)
-                                .distance(ball_query.single().0.translation)
-                                / 1.33,
-                            // 500.0,
-                        ])
-                        .local_anchor2(Vec2::ZERO);
+                    let joint = RopeJointBuilder::new(
+                        Vec3::new(mousepos.0.x, mousepos.0.y, 0.0)
+                            .distance(ball_query.single().0.translation),
+                    )
+                    .local_anchor1(mousepos.0 - anchor)
+                    // .limits([
+                    //     0.5,
+                    //     Vec3::new(mousepos.0.x, mousepos.0.y, 0.0)
+                    //         .distance(ball_query.single().0.translation)
+                    //         / 1.33,
+                    //     // 500.0,
+                    // ])
+                    .local_anchor2(Vec2::ZERO);
 
                     commands
                         .entity(ball_query.single().1)
@@ -100,9 +103,9 @@ fn grapple_hook(
 
                     for mut ext_force in ext_forces.iter_mut() {
                         ext_force.force =
-                            (-ball_query.single().0.translation.truncate() + mousepos.0) * 1000.0;
+                            (-ball_query.single().0.translation.truncate() + mousepos.0) * 10000.0;
 
-                        ext_force.torque = 100.0;
+                        ext_force.torque = 1000.0;
                     }
 
                     false

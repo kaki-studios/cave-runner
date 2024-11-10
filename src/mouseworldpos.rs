@@ -1,5 +1,5 @@
-use bevy::window::PrimaryWindow;
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 
 pub struct MouseWorldPos;
 
@@ -41,7 +41,8 @@ fn my_cursor_system(
 
     // check if the cursor is inside the window and get its position
     // then, ask bevy to convert into world coordinates, and truncate to discard Z
-    if let Some(world_position) = window.cursor_position()
+    if let Some(world_position) = window
+        .cursor_position()
         .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
         .map(|ray| ray.origin.truncate())
     {

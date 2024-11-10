@@ -28,9 +28,9 @@ fn handle_collisions(
     if !timer.0.just_finished() {
         timer.0.tick(time.delta());
     }
+
     for event in collision_events.read() {
         if let CollisionEvent::Started(_, _, CollisionEventFlags::SENSOR) = event {
-            // println!("test {}", timer.0.percent());
             if timer.0.finished() {
                 timer.0.reset();
 
@@ -42,17 +42,15 @@ fn handle_collisions(
                         println!("killing program because you won the game");
                         std::process::abort();
                     }
-                    _ => Difficulty::Normal(200),
+                    wrong => panic!("Difficulty is in an illegal state: {:?}", wrong),
                 };
                 *difficulty = new_difficulty.clone();
-                dbg!(&new_difficulty);
                 for mut element in &mut text {
-                    println!("riestnrisn");
                     element.sections[0].value = match new_difficulty {
                         Difficulty::Normal(200) => "Difficulty: Normal".into(),
                         Difficulty::Normal(300) => "Difficulty: Hard".into(),
                         Difficulty::Hardest => "Difficulty: Very Hard".into(),
-                        _ => "Bug!".into(),
+                        wrong => panic!("Difficulty is in an illegal state: {:?}", wrong),
                     }
                 }
             }

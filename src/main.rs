@@ -1,10 +1,10 @@
 #![windows_subsystem = "windows"]
 //this will disable the console from appearing on top of the game in windows
 use bevy::{prelude::*, window::*};
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier2d::prelude::*;
 use noise::core::open_simplex::*;
 use noise::permutationtable::PermutationTable;
+use noise::Vector2;
 use rand::Rng;
 
 mod collision;
@@ -68,13 +68,13 @@ fn main() {
         .add_plugins((DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "cave-runner".into(),
-                resolution: (1600., 900.).into(),
-                present_mode: PresentMode::AutoVsync,
+                // resolution: (1600., 900.).into(),
+                // present_mode: PresentMode::AutoVsync,
                 // Tells wasm to resize the window according to the available canvas
-                fit_canvas_to_parent: true,
+                // fit_canvas_to_parent: true,
                 // Tells wasm not to override default event handling, like F5, Ctrl+R etc.
-                prevent_default_event_handling: false,
-                window_theme: Some(WindowTheme::Dark),
+                // prevent_default_event_handling: false,
+                // window_theme: Some(WindowTheme::Dark),
                 ..default()
             }),
             ..default()
@@ -87,6 +87,7 @@ fn main() {
             MouseWorldPos,
             MeshGenPlugin,
             CollisionPlugin,
+            // WorldInspectorPlugin::new(),
             // RapierDebugRenderPlugin::default(),
         ))
         .init_resource::<VertsResource>()
@@ -94,7 +95,6 @@ fn main() {
         .add_systems(Update, move_cube)
         .insert_resource(VertTimer(Timer::from_seconds(0.5, TimerMode::Repeating)))
         // .add_plugins(RapierDebugRenderPlugin::default())
-        .add_plugins(WorldInspectorPlugin::new())
         .insert_resource(RapierContext::default())
         .run();
 }
@@ -120,7 +120,7 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
     let _cube = commands
         .spawn(SpriteBundle {
             sprite: Sprite {
-                color: Color::rgb(0.25, 0.25, 0.75),
+                color: Color::srgb(0.25, 0.25, 0.75),
                 custom_size: Some(Vec2::new(100.0, 100.0)),
                 ..default()
             },
@@ -155,7 +155,7 @@ fn setup_physics(mut commands: Commands, asset_server: Res<AssetServer>) {
         })
         .insert(SpriteBundle {
             sprite: Sprite {
-                color: Color::rgb(1.0, 1.0, 1.0),
+                color: Color::srgb(1.0, 1.0, 1.0),
                 custom_size: Some(Vec2::new(100.0, 100.0)),
                 ..default()
             },
@@ -195,10 +195,10 @@ fn move_cube(
 
         cube.rotate_z(
             open_simplex_2d::<PermutationTable>(
-                [
+                Vector2::new(
                     translation.x as f64 / 500.0_f64,
                     translation.y as f64 / 500.0_f64,
-                ],
+                ),
                 &hasher.hasher,
             ) as f32
                 * time.delta_seconds()

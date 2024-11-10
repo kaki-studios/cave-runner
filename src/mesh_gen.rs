@@ -2,6 +2,7 @@ use crate::VertTimer;
 use crate::VertsResource;
 use bevy::prelude::*;
 use bevy::render::mesh::*;
+use bevy::render::render_asset::RenderAssetUsages;
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 use bevy_rapier2d::prelude::*;
 
@@ -73,29 +74,35 @@ fn mesh_update(
                 let vertices23: Vec<Vec3> =
                     vertices2.into_iter().map(|vert| vert.extend(0.0)).collect();
 
-                let mut mesh1 = Mesh::new(PrimitiveTopology::TriangleList);
+                let mut mesh1 = Mesh::new(
+                    PrimitiveTopology::TriangleList,
+                    RenderAssetUsages::RENDER_WORLD,
+                );
                 mesh1.insert_attribute(Mesh::ATTRIBUTE_POSITION, vertices13);
-                mesh1.set_indices(Some(Indices::U16(indices.clone())));
+                mesh1.insert_indices(Indices::U16(indices.clone()));
 
                 let mesh11 = commands
                     .spawn(MaterialMesh2dBundle {
                         mesh: Mesh2dHandle(meshes.add(mesh1)),
                         transform: Transform::default(),
-                        material: materials.add(ColorMaterial::from(Color::GRAY)),
+                        material: materials.add(ColorMaterial::from(Color::BLACK)),
                         // visibility: Visibility::Visible,
                         ..default()
                     })
                     .id();
 
-                let mut mesh2 = Mesh::new(PrimitiveTopology::TriangleList);
+                let mut mesh2 = Mesh::new(
+                    PrimitiveTopology::TriangleList,
+                    RenderAssetUsages::RENDER_WORLD,
+                );
                 mesh2.insert_attribute(Mesh::ATTRIBUTE_POSITION, vertices23);
-                mesh2.set_indices(Some(Indices::U16(indices)));
+                mesh2.insert_indices(Indices::U16(indices));
 
                 let mesh22 = commands
                     .spawn(MaterialMesh2dBundle {
                         mesh: Mesh2dHandle(meshes.add(mesh2)),
                         transform: Transform::default(),
-                        material: materials.add(ColorMaterial::from(Color::GRAY)),
+                        material: materials.add(ColorMaterial::from(Color::BLACK)),
                         // visibility: Visibility::Visible,
                         ..default()
                     })
